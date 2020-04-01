@@ -18,7 +18,9 @@ jobs:
         python-version: [3.7]
     steps:
     - name: ECHO
-      run: echo ${{ github }}
+      run: echo event ${{ github.event_name }} sha ${{ github.sha }} ref ${{ github.ref }} 
+    - name: ECHO
+      run: echo head_ref ${{ github.head_ref }} base_ref ${{ github.head_ref }}
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
