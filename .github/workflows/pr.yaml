@@ -51,6 +51,8 @@ jobs:
     - name: planemo ci_find_repos
       run: |
            planemo ci_find_repos --changed_in_commit_range origin/master... --exclude packages --exclude deprecated --output changed_repositories.list
+    - name: show repo list
+      run: cat changed_repositories.list/changed_repositories.list
     - uses: actions/upload-artifact@v1
       with:
         name: Changed repositories
@@ -187,8 +189,6 @@ jobs:
                                $(cat changed_repositories.list/changed_repositories.list)
             fi
         fi
-    - name: show repo list
-      run: cat changed_repositories.list/changed_repositories.list
     - name: show changed tools/repositories chunk list
       run: cat changed_tools_chunk.list changed_repositories_chunk.list
     - name: planemo test tools
