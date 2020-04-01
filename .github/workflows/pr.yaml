@@ -1,11 +1,5 @@
 name: Galaxy Tool Linting and Tests for push and PR
-on: 
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 env:
   GALAXY_REPO: https://github.com/galaxyproject/galaxy
   GALAXY_RELEASE: release_20.01
