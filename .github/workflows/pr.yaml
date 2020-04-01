@@ -1,5 +1,11 @@
 name: Galaxy Tool Linting and Tests for push and PR
-on: [push, pull_request]
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 env:
   GALAXY_REPO: https://github.com/galaxyproject/galaxy
   GALAXY_RELEASE: release_20.01
@@ -11,6 +17,8 @@ jobs:
       matrix:
         python-version: [3.7]
     steps:
+    - name: ECHO
+      run: echo ${{ github }}
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
