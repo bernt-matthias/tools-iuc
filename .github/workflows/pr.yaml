@@ -1,8 +1,8 @@
 name: Galaxy Tool Linting and Tests for push and PR
 on: 
-  push:
-    branches:
-      - master
+#   push:
+#     branches:
+#       - master
   pull_request:
     branches:
       - master
