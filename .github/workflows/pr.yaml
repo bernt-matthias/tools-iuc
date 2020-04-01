@@ -48,7 +48,7 @@ jobs:
       run: |
            planemo ci_find_repos --changed_in_commit_range ${{ env.COMMIT_RANGE }} --exclude packages --exclude deprecated --output changed_repositories.list
     - name: show repo list
-      run: cat changed_repositories.list/changed_repositories.list
+      run: cat changed_repositories.list
     - uses: actions/upload-artifact@v1
       with:
         name: Changed repositories
