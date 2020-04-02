@@ -45,8 +45,8 @@ jobs:
     - name: get all branches
       run: |
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
-    -name: debug
-     run: |
+    - name: debug
+      run: |
         git rev-parse HEAD
         git rev-parse HEAD^2 || true
     - name: Determine commit range
