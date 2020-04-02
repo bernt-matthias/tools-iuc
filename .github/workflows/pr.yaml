@@ -41,7 +41,7 @@ jobs:
         PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_source $GALAXY_REPO --galaxy_branch $GALAXY_RELEASE
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 2
+        fetch-depth: 0
     - name: debug
       run: |
            git rev-parse HEAD
