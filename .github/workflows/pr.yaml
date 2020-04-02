@@ -47,7 +47,7 @@ jobs:
            git rev-parse HEAD
            git rev-parse HEAD^2 || true
     - name: Determine commit range
-      run: echo ::set-env name=COMMIT_RANGE::$(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^..HEAD^2" || echo "origin/master...")
+      run: echo ::set-env name=COMMIT_RANGE::$(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^..HEAD^2" || echo "master...")
     - name: more debug
       run: git log --oneline ${{ env.COMMIT_RANGE }}
     - name: Planemo ci_find_repos
