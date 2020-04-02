@@ -35,7 +35,7 @@ jobs:
     - name: Install Planemo and flake8
       run: pip install planemo flake8
     - name: Fake a planemo run to update cache
-      if: steps.cache-pip.outputs.cache-hit != 'true' && steps.cache-planemo.outputs.cache-hit != 'true'
+      if: steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true'
       run: |
         touch tool.xml
         PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_source $GALAXY_REPO --galaxy_branch $GALAXY_RELEASE
