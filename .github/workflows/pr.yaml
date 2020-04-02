@@ -225,6 +225,11 @@ jobs:
         name: 'Tool test output ${{ matrix.chunk  }}'
         path: upload
 
+  # - combine the results of the test chunks (which will never fail due
+  #   to `|| true`) and create a global test report as json and html which
+  #   is provided as artifact
+  # - check if any tool test actually failed (by lookup in the combined json)
+  #   and fail this step if this is the case 
   combine_outputs:
     name: Combine chunked test results
     needs: test
