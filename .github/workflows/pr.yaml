@@ -47,8 +47,7 @@ jobs:
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
     - name: Determine commit range for feature branch
       if: github.ref != 'refs/heads/master'
-      run: echo ::set-env name=COMMIT_RANGE::"origin/master..."
-
+      run: echo ::set-env name=COMMIT_RANGE::"origin/master.."
     - name: Determine commit range for merge to master 
       if: github.ref == 'refs/heads/master'
       run: echo ::set-env name=COMMIT_RANGE::"HEAD^..HEAD^2"
@@ -310,13 +309,14 @@ jobs:
       with:
         name: Changed repositories
         path: changed_repositories.list
+    # TODO remove --owner
     - name: Deploy on testtoolshed
       env:
         SHED_KEY: ${{ secrets.tts_api_key }}
       run: |
         while read -r DIR;
         do
-            planemo shed_update --shed_target testtoolshed --shed_key "${{ env.SHED_KEY }}" --force_repository_creation "$DIR" || exit 1;
+            planemo shed_update --shed_target testtoolshed --shed_key "${{ env.SHED_KEY }}" --force_repository_creation "$DIR" --owner matthias || exit 1;
         done < changed_repositories.list/changed_repositories.list
     - name: Deploy on toolshed
       env:
