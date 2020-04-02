@@ -47,7 +47,7 @@ jobs:
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
     - name: Determine commit range for feature branch
       if: github.ref != 'refs/heads/master'
-      run: echo ::set-env name=COMMIT_RANGE::"master..."
+      run: echo ::set-env name=COMMIT_RANGE::"origin/master..."
 
     - name: Determine commit range for merge to master 
       if: github.ref == 'refs/heads/master'
