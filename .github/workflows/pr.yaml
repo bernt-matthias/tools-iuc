@@ -61,7 +61,8 @@ jobs:
     #   is the range 
     - name: Determine commit range for merge to master 
       if: github.ref == 'refs/heads/master'
-      run: echo ::set-env name=COMMIT_RANGE::$(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^...HEAD^2" || echo "HEAD^")
+      run: echo ::set-env name=COMMIT_RANGE::${{ github.event.before }}...${{ github.event.after }}
+    # $(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^...HEAD^2" || echo "HEAD^")
 
     - name: more debug
       run: git diff --name-only ${{ env.COMMIT_RANGE }} --
