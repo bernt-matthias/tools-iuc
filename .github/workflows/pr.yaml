@@ -47,7 +47,7 @@ jobs:
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
     - name: Determine commit range for feature branch
       if: github.ref != 'refs/heads/master'
-      run: echo ::set-env name=COMMIT_RANGE::"origin/master.."
+      run: echo ::set-env name=COMMIT_RANGE::"origin/master..."
 
     # for merge commit it is either
     # - a 3 way merge: then the range is determined by the two parents: HEAD^ 
@@ -60,7 +60,7 @@ jobs:
       run: echo ::set-env name=COMMIT_RANGE::$(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^...HEAD^2" || echo "HEAD^")
 
     - name: more debug
-      run: git log --oneline ${{ env.COMMIT_RANGE }}
+      run: git diff --name-only ${{ env.COMMIT_RANGE }} --
     - name: Planemo ci_find_repos
       run: |
         planemo ci_find_repos --changed_in_commit_range ${{ env.COMMIT_RANGE }} --exclude packages --exclude deprecated --output changed_repositories.list
