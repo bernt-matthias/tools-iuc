@@ -15,6 +15,10 @@ jobs:
       run: echo event_name ${{ github.event_name }} sha ${{ github.sha }} ref ${{ github.ref }} 
     - name: ECHO
       run: echo head_ref ${{ github.head_ref }} base_ref ${{ github.head_ref }} pull_request_head_sha ${{ github.event.pull_request.head.sha }}
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
