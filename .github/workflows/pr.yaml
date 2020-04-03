@@ -48,9 +48,17 @@ jobs:
     - name: Determine commit range for feature branch
       if: github.ref != 'refs/heads/master'
       run: echo ::set-env name=COMMIT_RANGE::"origin/master.."
+
+    # for merge commit it is either
+    # - a 3 way merge: then the range is determined by the two parents: HEAD^ 
+    #   (what was master before the merge) and HEAD^2 (the HEAD of the feature
+    #   branch)
+    # - a fast forward merge then the commit is what happend wrt to the parent
+    #   is the range 
     - name: Determine commit range for merge to master 
       if: github.ref == 'refs/heads/master'
-      run: echo ::set-env name=COMMIT_RANGE::"HEAD^..HEAD^2"
+      run: echo ::set-env name=COMMIT_RANGE::$(git rev-parse HEAD^2 &> /dev/null && echo "HEAD^...HEAD^2" || echo "HEAD^")
+
     - name: more debug
       run: git log --oneline ${{ env.COMMIT_RANGE }}
     - name: Planemo ci_find_repos
