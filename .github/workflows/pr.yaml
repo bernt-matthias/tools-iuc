@@ -1,5 +1,6 @@
 name: Galaxy Tool Linting and Tests for push and PR
-on: push #, pull_request]
+on: push
+#, pull_request]
   paths:
     - data_managers/**
     - tool_collections/**
