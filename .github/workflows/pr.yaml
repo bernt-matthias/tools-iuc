@@ -1,5 +1,10 @@
 name: Galaxy Tool Linting and Tests for push and PR
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - data_managers/**
+      - tool_collections/**
+      - tools/**
 env:
   GALAXY_REPO: https://github.com/galaxyproject/galaxy
   GALAXY_RELEASE: release_20.01
@@ -66,16 +71,13 @@ jobs:
     # - for pull requests we compare against the 1st ancestor, given the current
     #   HEAD is the merge between the PR branch and the base branch
     - name: Set commit range (push to the feature branch)
-      if: github.ref != 'refs/heads/master' && github.event_name == 'push'
+      if: github.ref != 'refs/heads/master'
       run: |
         git fetch origin master
         echo ::set-env name=COMMIT_RANGE::"origin/master..."
     - name: Set commit range (push to the master branch, i.e. merge)
-      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      if: github.ref == 'refs/heads/master'
       run: echo ::set-env name=COMMIT_RANGE::${{ github.event.before }}..""
-    - name: Set commit range (pull request)
-      if: github.event_name == 'pull_request'
-      run: echo ::set-env name=COMMIT_RANGE::"HEAD~.."
     - name: Planemo ci_find_repos
       run: planemo ci_find_repos --changed_in_commit_range ${{ env.COMMIT_RANGE }} --exclude packages --exclude deprecated --output ../workflow_artifacts/changed_repositories.list
     - name: Show repo list
