@@ -5,7 +5,6 @@ env:
 jobs:
   setup:
     name: Setup cache
-    if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,7 +28,7 @@ jobs:
     - name: Fake a planemo run to update cache
       run: |
         touch tool.xml
-        PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_branch --galaxy_source https://github.com/bernt-matthias/galaxy.git --galaxy_branch topic/do_set_e
+        PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_source https://github.com/bernt-matthias/galaxy.git --galaxy_branch topic/do_set_e
   test:
     name: Test tools
     # This job runs on Linux
