@@ -1,8 +1,5 @@
 name: Weekly global Tool Linting and Tests
-on:
-  schedule:
-    # Run at midnight every monday
-    - cron: '0 0 * * 1'
+on: [push, pull_request]
 env:
   GALAXY_RELEASE: release_20.05
 jobs:
@@ -32,7 +29,7 @@ jobs:
     - name: Fake a planemo run to update cache
       run: |
         touch tool.xml
-        PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_branch $GALAXY_RELEASE
+        PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_branch --galaxy_source https://github.com/bernt-matthias/galaxy.git --galaxy_branch topic/do_set_e
   test:
     name: Test tools
     # This job runs on Linux
@@ -81,7 +78,7 @@ jobs:
                else
                    TESTPATH="$DIR"
                fi
-               PIP_QUIET=1 planemo test --database_connection postgresql://postgres:postgres@localhost:5432/galaxy --no_conda_auto_init --galaxy_branch $GALAXY_RELEASE --biocontainers --no_dependency_resolution --galaxy_python_version ${{ matrix.python-version }} --test_output_json "$DIR"/tool_test_output.json "$TESTPATH" || true
+               PIP_QUIET=1 planemo test --database_connection postgresql://postgres:postgres@localhost:5432/galaxy --no_conda_auto_init --galaxy_source https://github.com/bernt-matthias/galaxy.git --galaxy_branch topic/do_set_e --biocontainers --no_dependency_resolution --galaxy_python_version ${{ matrix.python-version }} --test_output_json "$DIR"/tool_test_output.json "$TESTPATH" || true
                docker system prune --all --force --volumes || true
            done < tool.list
     - name: Merge tool_test_output.json files
