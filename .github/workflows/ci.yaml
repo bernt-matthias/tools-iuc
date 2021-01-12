@@ -2,7 +2,7 @@ name: Weekly global Tool Linting and Tests
 on:
   schedule:
     # Run at midnight every monday
-    - cron: '30 * * * *'
+    - cron: '45 * * * *'
   repository_dispatch:
     types: [run-all-tool-tests-command]
 env:
