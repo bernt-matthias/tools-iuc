@@ -1,10 +1,12 @@
 name: Weekly global Tool Linting and Tests
-on:
-  schedule:
-    # Run at midnight every monday
-    - cron: '0 0 * * 1'
-  repository_dispatch:
-    types: [run-all-tool-tests-command]
+# TODO RESTORE
+on: [push, pull_request]
+# on:
+#   schedule:
+#     # Run at midnight every monday
+#     - cron: '0 0 * * 1'
+#   repository_dispatch:
+#     types: [run-all-tool-tests-command]
 env:
   GALAXY_RELEASE: release_20.09
   GALAXY_FORK: galaxyproject
@@ -12,14 +14,15 @@ env:
 jobs:
   setup:
     name: Setup cache
-    if: github.repository_owner == 'galaxyproject'
+    # TODO RESTORE if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     outputs:
       branch: ${{ steps.get-fork-branch.outputs.branch }}
       fork: ${{ steps.get-fork-branch.outputs.fork }}
-      galaxy_head_sha: ${{ steps.get-galaxy-sha.outputs.galaxy_head_sha }}
-      nchunks: ${{ steps.get-chunks.outputs.nchunks }}
-      chunk_list: ${{ steps.get-chunks.outputs.chunk_list }}
+      galaxy-head-sha: ${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
+      repositories: ${{ steps.discover.outputs.repositories }}
+      nchunks: ${{ steps.discover.outputs.nchunks }}
+      chunk-list: ${{ steps.discover.outputs.chunk-list }}
     strategy:
       matrix:
         python-version: [3.7]
@@ -41,7 +44,7 @@ jobs:
         echo "::set-output name=branch::${TMP:-$GALAXY_RELEASE}"
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
-      run: echo "::set-output name=galaxy_head_sha::$(git ls-remote https://github.com/${{ steps.get-fork-branch.outputs.fork }}/galaxy refs/heads/${{ steps.get-fork-branch.outputs.branch }} | cut -f1)"
+      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-fork-branch.outputs.fork }}/galaxy refs/heads/${{ steps.get-fork-branch.outputs.branch }} | cut -f1)"
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -50,43 +53,31 @@ jobs:
       id: cache-pip
       with:
         path: ~/.cache/pip
-        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ steps.get-galaxy-sha.outputs.galaxy_head_sha }}
+        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
     # Install the `wheel` package so that when installing other packages which
     # are not available as wheels, pip will build a wheel for them, which can be cached.
     - name: Install wheel
       run: pip install wheel
     - name: Install Planemo
       run: pip install planemo
-    - name: Fake a Planemo run to update cache
-      if: steps.cache-pip.outputs.cache-hit != 'true'
-      run: |
-        touch tool.xml
-        PIP_QUIET=1 planemo test --galaxy_python_version ${{ matrix.python-version }} --no_conda_auto_init --galaxy_source 'https://github.com/${{ steps.get-fork-branch.outputs.fork }}/galaxy' --galaxy_branch "${{ steps.get-fork-branch.outputs.branch }}" --galaxy_python_version ${{ matrix.python-version }}
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 1
-    - name: Planemo ci_find_repos
-      run: planemo ci_find_repos --exclude packages --exclude deprecated --exclude_from .tt_skip --output repository_list.txt
+        fetch-depth: 0
+    - name: Fake a Planemo run to update cache and determine commit range, repositories, and chunks
+      uses: bernt-matthias/planemo-ci-action@master
+      id: discover
+      with:
+        create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
+        galaxy-branch: ${{ steps.get-fork-branch.outputs.branch }}
+        galaxy-source: https://github.com/${{ steps.get-fork-branch.outputs.fork }}/galaxy
+        max-chunks: ${{ env.MAX_CHUNKS }}
+        python-version: ${{ matrix.python-version }}
     - name: Show repository list
-      run: cat repository_list.txt
-    - name: Planemo ci_find_tools for the repository list
-      run: planemo ci_find_tools --output tool_list.txt $(cat repository_list.txt)
-    - name: Show tool list
-      run: cat tool_list.txt
-    - name: Compute chunks
-      id: get-chunks
-      run: |
-        nchunks=$(wc -l < tool_list.txt)
-        if [ "$nchunks" -gt "$MAX_CHUNKS" ]; then
-            nchunks=$MAX_CHUNKS
-        elif [ "$nchunks" -eq 0 ]; then
-            nchunks=1
-        fi
-        echo "::set-output name=nchunks::$nchunks"
-        echo "::set-output name=chunk_list::[$(seq -s ", " 0 $(($nchunks - 1)))]"
+      run: echo ${{ steps.discover.outputs.repositories }}
     - name: Show chunks
       run: |
-        echo 'Using ${{ steps.get-chunks.outputs.nchunks }} chunks (${{ steps.get-chunks.outputs.chunk_list }})'
+        echo 'Using ${{ steps.discover.outputs.nchunks }} chunks (${{ steps.discover.outputs.chunk-list }})'
+
 
   test:
     name: Test tools
@@ -96,7 +87,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chunk: ${{ fromJson(needs.setup.outputs.chunk_list) }}
+        chunk: ${{ fromJson(needs.setup.outputs.chunk-list) }}
         python-version: [3.7]
     services:
       postgres:
@@ -121,7 +112,7 @@ jobs:
       id: cache-pip
       with:
         path: ~/.cache/pip
-        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy_head_sha }}
+        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Install Planemo
       run: pip install planemo
     - name: Planemo ci_find_tools, chunked
@@ -183,7 +174,7 @@ jobs:
       id: cache-pip
       with:
         path: ~/.cache/pip
-        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy_head_sha }}
+        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Install Planemo
       run: pip install planemo
     - name: Install jq
