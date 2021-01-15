@@ -107,7 +107,7 @@ jobs:
       id: lint
       with:
         lint-tools: true
-        repositories: ${{ needs.setup.outputs.repositories }} 
+        repositories: ${{ needs.setup.outputs.repositories }}
         tools: ${{ needs.setup.outputs.tools }} 
 
   # flake8 of Python scripts in the changed repositories

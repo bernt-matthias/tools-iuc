@@ -76,7 +76,6 @@ jobs:
       run: |
         echo 'Using ${{ steps.discover.outputs.nchunks }} chunks (${{ steps.discover.outputs.chunk-list }})'
 
-
   test:
     name: Test tools
     # This job runs on Linux
