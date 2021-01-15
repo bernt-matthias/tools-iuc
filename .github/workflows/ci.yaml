@@ -60,7 +60,7 @@ jobs:
       run: pip install planemo
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
     - name: Fake a Planemo run to update cache and determine commit range, repositories, and chunks
       uses: bernt-matthias/planemo-ci-action@master
       id: discover
