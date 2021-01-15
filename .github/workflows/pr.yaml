@@ -72,9 +72,9 @@ jobs:
     - name: Show commit range
       run: echo ${{ steps.discover.outputs.commit-range }}
     - name: Show repository list
-      run: echo ${{ steps.discover.outputs.repositories }}
+      run: echo "${{ steps.discover.outputs.repositories }}"
     - name: Show tool list
-      run: echo ${{ steps.discover.outputs.tools }}
+      run: echo "${{ steps.discover.outputs.tools }}"
     - name: Show chunks
       run: |
         echo 'Using ${{ steps.discover.outputs.chunk-count }} chunks (${{ steps.discover.outputs.chunk-list }})'
