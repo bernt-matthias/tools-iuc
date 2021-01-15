@@ -20,7 +20,7 @@ jobs:
       commit-range: ${{ steps.discover.outputs.commit-range }}
       repositories: ${{ steps.discover.outputs.repositories }}
       tools: ${{ steps.discover.outputs.tools }}
-      nchunks: ${{ steps.discover.outputs.nchunks }}
+      chunk-count: ${{ steps.discover.outputs.chunk-count }}
       chunk-list: ${{ steps.discover.outputs.chunk-list }}
     strategy:
       matrix:
@@ -75,7 +75,7 @@ jobs:
       run: echo ${{ steps.discover.outputs.repositories }}
     - name: Show chunks
       run: |
-        echo 'Using ${{ steps.discover.outputs.nchunks }} chunks (${{ steps.discover.outputs.chunk-list }})'
+        echo 'Using ${{ steps.discover.outputs.chunk-count }} chunks (${{ steps.discover.outputs.chunk-list }})'
 
   # Planemo lint the changed repositories
   lint:
@@ -92,7 +92,7 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -109,18 +109,6 @@ jobs:
         lint-tools: true
         repositories: ${{ needs.setup.outputs.repositories }} 
         tools: ${{ needs.setup.outputs.tools }} 
-#     - name: Planemo ci_find_tools for the commit range
-#       run: planemo ci_find_tools --changed_in_commit-range ${{ needs.setup.outputs.commit-range }} --exclude packages --exclude deprecated --exclude_from .tt_skip --output tool_list.txt
-#     - name: Check if each changed tool is in the list of changed repositories
-#       run: |
-#         set -e
-#         while read -r TOOL; do
-#             # Check if any changed repo dir is a substring of $TOOL
-#             if ! echo $TOOL | grep -qf ../workflow_artifacts/repository_list.txt; then
-#                 echo "Tool $TOOL not in changed repositories list: .shed.yml file missing" >&2
-#                 exit 1
-#             fi
-#         done < tool_list.txt
 
   # flake8 of Python scripts in the changed repositories
   flake8:
@@ -137,7 +125,7 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -165,7 +153,7 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
     - uses: r-lib/actions/setup-r@master
       with:
         r-version: ${{ matrix.r-version }}
@@ -232,7 +220,7 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -248,41 +236,51 @@ jobs:
       with:
         path: ~/.planemo
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
-    - name: Install Planemo
-      run: pip install planemo
-    - name: Planemo ci_find_tools for the repository list, chunked
-      run: |
-        touch tool_list_chunk.txt
-        if [ -s ../workflow_artifacts/repository_list.txt ]; then
-          planemo ci_find_tools --chunk_count ${{ needs.setup.outputs.nchunks }} --chunk ${{ matrix.chunk }} --group_tools --output tool_list_chunk.txt $(cat ../workflow_artifacts/repository_list.txt)
-        fi
-    - name: Show tool list chunk
-      run: cat tool_list_chunk.txt
-    - name: Planemo test tools
-      run: |
-        mkdir json_output
-        while read -r TOOL_GROUP; do
-            # Check if any of the lines in .tt_biocontainer_skip is a substring of $TOOL_GROUP
-            if echo $TOOL_GROUP | grep -qf .tt_biocontainer_skip; then
-                PLANEMO_OPTIONS=""
-            else
-                PLANEMO_OPTIONS="--biocontainers --no_dependency_resolution --no_conda_auto_init"
-            fi
-            json=$(mktemp -u -p json_output --suff .json)
-            PIP_QUIET=1 planemo test --database_connection postgresql://postgres:postgres@localhost:5432/galaxy $PLANEMO_OPTIONS --galaxy_source $GALAXY_REPO --galaxy_branch $GALAXY_RELEASE --galaxy_python_version ${{ matrix.python-version }} --test_output_json "$json" $TOOL_GROUP || true
-            docker system prune --all --force --volumes || true
-        done < tool_list_chunk.txt
-        if [ ! -s tool_list_chunk.txt ]; then
-            echo '{"tests":[]}' > "$(mktemp -u -p json_output --suff .json)"
-        fi
-    - name: Merge tool_test_output.json files
-      run: planemo merge_test_reports json_output/*.json tool_test_output.json
-    - name: Create tool_test_output.html
-      run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
-    - name: Copy artifacts into place
-      run: |
-        mkdir upload
-        mv tool_test_output.json tool_test_output.html upload/
+
+    - name: Planemo test
+      uses: bernt-matthias/planemo-ci-action@master
+      id: test
+      with:
+        test-tools: true
+        repositories: ${{ needs.setup.outputs.repositories }}
+        chunk: ${{ matrix.chunk }}
+        chunk-count: ${{ needs.setup.outputs.chunk-count }}
+#   
+#     - name: Install Planemo
+#       run: pip install planemo
+#     - name: Planemo ci_find_tools for the repository list, chunked
+#       run: |
+#         touch tool_list_chunk.txt
+#         if [ -s ../workflow_artifacts/repository_list.txt ]; then
+#           planemo ci_find_tools --chunk_count ${{ needs.setup.outputs.nchunks }} --chunk ${{ matrix.chunk }} --group_tools --output tool_list_chunk.txt $(cat ../workflow_artifacts/repository_list.txt)
+#         fi
+#     - name: Show tool list chunk
+#       run: cat tool_list_chunk.txt
+#     - name: Planemo test tools
+#       run: |
+#         mkdir json_output
+#         while read -r TOOL_GROUP; do
+#             # Check if any of the lines in .tt_biocontainer_skip is a substring of $TOOL_GROUP
+#             if echo $TOOL_GROUP | grep -qf .tt_biocontainer_skip; then
+#                 PLANEMO_OPTIONS=""
+#             else
+#                 PLANEMO_OPTIONS="--biocontainers --no_dependency_resolution --no_conda_auto_init"
+#             fi
+#             json=$(mktemp -u -p json_output --suff .json)
+#             PIP_QUIET=1 planemo test --database_connection postgresql://postgres:postgres@localhost:5432/galaxy $PLANEMO_OPTIONS --galaxy_source $GALAXY_REPO --galaxy_branch $GALAXY_RELEASE --galaxy_python_version ${{ matrix.python-version }} --test_output_json "$json" $TOOL_GROUP || true
+#             docker system prune --all --force --volumes || true
+#         done < tool_list_chunk.txt
+#         if [ ! -s tool_list_chunk.txt ]; then
+#             echo '{"tests":[]}' > "$(mktemp -u -p json_output --suff .json)"
+#         fi
+#     - name: Merge tool_test_output.json files
+#       run: planemo merge_test_reports json_output/*.json tool_test_output.json
+#     - name: Create tool_test_output.html
+#       run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
+#     - name: Copy artifacts into place
+#       run: |
+#         mkdir upload
+#         mv tool_test_output.json tool_test_output.html upload/
     - uses: actions/upload-artifact@v2
       with:
         name: 'Tool test output ${{ matrix.chunk }}'
