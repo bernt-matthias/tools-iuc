@@ -43,7 +43,7 @@ jobs:
     # TODO integrate in get-repo?
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
-      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-repo.fork }}/galaxy refs/heads/${{ steps.get-repo.branch }} | cut -f1)"
+      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-repo.outputs.fork }}/galaxy refs/heads/${{ steps.get-repo.outputs.branch }} | cut -f1)"
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -71,8 +71,8 @@ jobs:
       id: discover
       with:
         create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
-        galaxy-fork: ${{ steps.get-repo.fork }}
-        galaxy-branch: ${{ steps.get-repo.branch }}
+        galaxy-fork: ${{ steps.get-repo.outputs.fork }}
+        galaxy-branch: ${{ steps.get-repo.outputs.branch }}
         max-chunks: ${{ env.MAX_CHUNKS }}
         python-version: ${{ matrix.python-version }}
     - name: Show commit range
