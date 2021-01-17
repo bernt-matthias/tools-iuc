@@ -1,4 +1,4 @@
-<tool id="addName" name="Add input name as column" version="0.2.0" profile="17.09">
+<tool id="addName" name="Add input name as column" version="0.3.0" profile="17.09">
     <description>to an existing tabular file</description>
     <requirements>
         <requirement type="package" version="3.7">python</requirement>
