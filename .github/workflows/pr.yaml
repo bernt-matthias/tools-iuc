@@ -248,42 +248,6 @@ jobs:
         repositories: ${{ needs.setup.outputs.repositories }}
         chunk: ${{ matrix.chunk }}
         chunk-count: ${{ needs.setup.outputs.chunk-count }}
-#   
-#     - name: Install Planemo
-#       run: pip install planemo
-#     - name: Planemo ci_find_tools for the repository list, chunked
-#       run: |
-#         touch tool_list_chunk.txt
-#         if [ -s ../workflow_artifacts/repository_list.txt ]; then
-#           planemo ci_find_tools --chunk_count ${{ needs.setup.outputs.nchunks }} --chunk ${{ matrix.chunk }} --group_tools --output tool_list_chunk.txt $(cat ../workflow_artifacts/repository_list.txt)
-#         fi
-#     - name: Show tool list chunk
-#       run: cat tool_list_chunk.txt
-#     - name: Planemo test tools
-#       run: |
-#         mkdir json_output
-#         while read -r TOOL_GROUP; do
-#             # Check if any of the lines in .tt_biocontainer_skip is a substring of $TOOL_GROUP
-#             if echo $TOOL_GROUP | grep -qf .tt_biocontainer_skip; then
-#                 PLANEMO_OPTIONS=""
-#             else
-#                 PLANEMO_OPTIONS="--biocontainers --no_dependency_resolution --no_conda_auto_init"
-#             fi
-#             json=$(mktemp -u -p json_output --suff .json)
-#             PIP_QUIET=1 planemo test --database_connection postgresql://postgres:postgres@localhost:5432/galaxy $PLANEMO_OPTIONS --galaxy_source $GALAXY_REPO --galaxy_branch $GALAXY_RELEASE --galaxy_python_version ${{ matrix.python-version }} --test_output_json "$json" $TOOL_GROUP || true
-#             docker system prune --all --force --volumes || true
-#         done < tool_list_chunk.txt
-#         if [ ! -s tool_list_chunk.txt ]; then
-#             echo '{"tests":[]}' > "$(mktemp -u -p json_output --suff .json)"
-#         fi
-#     - name: Merge tool_test_output.json files
-#       run: planemo merge_test_reports json_output/*.json tool_test_output.json
-#     - name: Create tool_test_output.html
-#       run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
-#     - name: Copy artifacts into place
-#       run: |
-#         mkdir upload
-#         mv tool_test_output.json tool_test_output.html upload/
     - uses: actions/upload-artifact@v2
       with:
         name: 'Tool test output ${{ matrix.chunk }}'
@@ -320,15 +284,7 @@ jobs:
       id: combine
       with:
         combine-outputs: true
-        repositories: ${{ needs.setup.outputs.repositories }}
-#     - name: Combine outputs
-#       run: find artifacts/ -name tool_test_output.json -exec sh -c 'planemo merge_test_reports "$@" tool_test_output.json' sh {} +
-#     - name: Create tool_test_output.html
-#       run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
-#     - name: Copy artifacts into place
-#       run: |
-#         mkdir upload
-#         mv tool_test_output.json tool_test_output.html upload/
+        html-report: true
     - uses: actions/upload-artifact@v2
       with:
         name: 'All tool test results'
@@ -338,13 +294,6 @@ jobs:
       id: check
       with:
         check-outputs: true
-        repositories: ${{ needs.setup.outputs.repositories }}
-#     - name: Check status of combined outputs
-#       run: |
-#         if jq '.["tests"][]["data"]["status"]' upload/tool_test_output.json | grep -v "success"; then
-#             echo "Unsuccessful tests found, inspect the 'All tool test results' artifact for details."
-#             exit 1
-#         fi
 
   # deploy the tools to the toolsheds (first TTS for testing)
   deploy:
@@ -372,20 +321,18 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
-    - name: Install Planemo
-      run: pip install planemo
+#     - name: Install Planemo
+#       run: pip install planemo
     - name: Deploy on testtoolshed
-      env:
-        SHED_KEY: ${{ secrets.TTS_API_KEY }}
-      run: |
-        while read -r DIR; do
-            planemo shed_update --shed_target testtoolshed --shed_key "${{ env.SHED_KEY }}" --force_repository_creation "$DIR" || exit 1;
-        done < ../workflow_artifacts/repository_list.txt
+      uses: bernt-matthias/planemo-ci-action@master
+      with:
+        deploy-tools: true
+        shed-target: testtoolshed
+        shed-key: ${{ secrets.TTS_API_KEY }}
       continue-on-error: true
     - name: Deploy on toolshed
-      env:
-        SHED_KEY: ${{ secrets.TS_API_KEY }}
-      run: |
-        while read -r DIR; do
-            planemo shed_update --shed_target toolshed --shed_key "${{ env.SHED_KEY }}" --force_repository_creation "$DIR" || exit 1;
-        done < ../workflow_artifacts/repository_list.txt
+      uses: bernt-matthias/planemo-ci-action@master
+      with:
+        deploy-tools: true
+        shed-target: toolshed
+        shed-key: ${{ secrets.TS_API_KEY }}
