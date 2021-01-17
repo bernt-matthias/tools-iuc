@@ -320,6 +320,7 @@ jobs:
       id: combine
       with:
         combine-outputs: true
+        repositories: ${{ needs.setup.outputs.repositories }}
 #     - name: Combine outputs
 #       run: find artifacts/ -name tool_test_output.json -exec sh -c 'planemo merge_test_reports "$@" tool_test_output.json' sh {} +
 #     - name: Create tool_test_output.html
@@ -337,6 +338,7 @@ jobs:
       id: check
       with:
         check-outputs: true
+        repositories: ${{ needs.setup.outputs.repositories }}
 #     - name: Check status of combined outputs
 #       run: |
 #         if jq '.["tests"][]["data"]["status"]' upload/tool_test_output.json | grep -v "success"; then
