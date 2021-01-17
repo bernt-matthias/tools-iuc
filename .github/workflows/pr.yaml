@@ -171,7 +171,8 @@ jobs:
         install.packages('remotes')
         remotes::install_cran("lintr")
       shell: Rscript {0}
-    - run: echo ${{ needs.setup.outputs.repositories }} > repository_list.txt
+    - name: Save repositories to file
+      run: echo ${{ needs.setup.outputs.repositories }} > repository_list.txt
     - name: lintr
       run: |
         library(lintr)
@@ -314,28 +315,34 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
-    - name: Install Planemo
-      run: pip install planemo
-    - name: Install jq
-      run: sudo apt-get install jq
     - name: Combine outputs
-      run: find artifacts/ -name tool_test_output.json -exec sh -c 'planemo merge_test_reports "$@" tool_test_output.json' sh {} +
-    - name: Create tool_test_output.html
-      run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
-    - name: Copy artifacts into place
-      run: |
-        mkdir upload
-        mv tool_test_output.json tool_test_output.html upload/
+      uses: bernt-matthias/planemo-ci-action@master
+      id: combine
+      with:
+        combine-outputs: true
+#     - name: Combine outputs
+#       run: find artifacts/ -name tool_test_output.json -exec sh -c 'planemo merge_test_reports "$@" tool_test_output.json' sh {} +
+#     - name: Create tool_test_output.html
+#       run: planemo test_reports tool_test_output.json --test_output tool_test_output.html
+#     - name: Copy artifacts into place
+#       run: |
+#         mkdir upload
+#         mv tool_test_output.json tool_test_output.html upload/
     - uses: actions/upload-artifact@v2
       with:
         name: 'All tool test results'
         path: upload
-    - name: Check status of combined outputs
-      run: |
-        if jq '.["tests"][]["data"]["status"]' upload/tool_test_output.json | grep -v "success"; then
-            echo "Unsuccessful tests found, inspect the 'All tool test results' artifact for details."
-            exit 1
-        fi
+    - name: Check outputs
+      uses: bernt-matthias/planemo-ci-action@master
+      id: check
+      with:
+        check-outputs: true
+#     - name: Check status of combined outputs
+#       run: |
+#         if jq '.["tests"][]["data"]["status"]' upload/tool_test_output.json | grep -v "success"; then
+#             echo "Unsuccessful tests found, inspect the 'All tool test results' artifact for details."
+#             exit 1
+#         fi
 
   # deploy the tools to the toolsheds (first TTS for testing)
   deploy:
