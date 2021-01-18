@@ -179,9 +179,8 @@ jobs:
           [Find all tool test results here][1]
 
           [1]: ${{ steps.vars.outputs.run-url }}
-    - name: Check status of combined outputs
-      run: |
-        if jq '.["tests"][]["data"]["status"]' upload/tool_test_output.json | grep -v "success"; then
-            echo "Unsuccessful tests found, inspect the 'All tool test results' artifact for details."
-            exit 1
-        fi
+    - name: Check outputs
+      uses: bernt-matthias/planemo-ci-action@master
+      id: check
+      with:
+        check-outputs: true
