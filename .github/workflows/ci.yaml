@@ -154,6 +154,7 @@ jobs:
       id: combine
       with:
         combine-outputs: true
+        html-report: true
     - uses: actions/upload-artifact@v2
       with:
         name: 'All tool test results'
