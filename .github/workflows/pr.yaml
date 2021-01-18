@@ -1,6 +1,8 @@
 name: Galaxy Tool Linting and Tests for push and PR
 on: [push, pull_request]
 env:
+  GALAXY_FORK: galaxyproject
+  GALAXY_BRANCH: release_20.09
   MAX_CHUNKS: 4
 jobs:
   # the setup job does two things:
@@ -14,8 +16,6 @@ jobs:
     name: Setup cache and determine changed repositories
     runs-on: ubuntu-latest
     outputs:
-      fork: ${{ steps.get-repo.outputs.fork }}
-      branch: ${{ steps.get-repo.outputs.branch }}
       galaxy-head-sha: ${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
       commit-range: ${{ steps.discover.outputs.commit-range }}
       repositories: ${{ steps.discover.outputs.repositories }}
@@ -35,15 +35,9 @@ jobs:
         echo 'base_ref: ${{ github.base_ref }}'
         echo 'event.before: ${{ github.event.before }}'
         echo 'event.after: ${{ github.event.after }}'
-    - name: Determine fork and branch of the Galaxy to be used
-      uses: bernt-matthias/planemo-ci-action@master
-      id: get-repo
-      with:
-        get-repo: true
-    # TODO integrate in get-repo?
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
-      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-repo.outputs.fork }}/galaxy refs/heads/${{ steps.get-repo.outputs.branch }} | cut -f1)"
+      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ env.GALAXY_FORK }}/galaxy refs/heads/${{ env.GALAXY_BRANCH }} | cut -f1)"
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -72,8 +66,8 @@ jobs:
       id: discover
       with:
         create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
-        galaxy-fork: ${{ steps.get-repo.outputs.fork }}
-        galaxy-branch: ${{ steps.get-repo.outputs.branch }}
+        galaxy-fork: ${{ env.GALAXY_FORK }}
+        galaxy-branch: ${{ env.GALAXY_BRANCH }}
         max-chunks: ${{ env.MAX_CHUNKS }}
         python-version: ${{ matrix.python-version }}
     - name: Show commit range
@@ -253,8 +247,8 @@ jobs:
       with:
         test-tools: true
         repositories: ${{ needs.setup.outputs.repositories }}
-        galaxy-fork: ${{ needs.setup.outputs.fork }}
-        galaxy-branch: ${{ needs.setup.outputs.branch }}
+        galaxy-fork: ${{ env.GALAXY_FORK }}
+        galaxy-branch: ${{ env.GALAXY_BRANCH }}
         chunk: ${{ matrix.chunk }}
         chunk-count: ${{ needs.setup.outputs.chunk-count }}
     - uses: actions/upload-artifact@v2

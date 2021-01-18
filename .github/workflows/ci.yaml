@@ -6,6 +6,8 @@ on:
   repository_dispatch:
     types: [run-all-tool-tests-command]
 env:
+  GALAXY_FORK: galaxyproject
+  GALAXY_BRANCH: release_20.09
   MAX_CHUNKS: 40
 jobs:
   setup:
@@ -13,8 +15,8 @@ jobs:
     # todo restore if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     outputs:
-      fork: ${{ steps.get-repo.outputs.fork }}
-      branch: ${{ steps.get-repo.outputs.branch }}
+      fork: ${{ steps.get-fork-branch.outputs.fork }}
+      branch: ${{ steps.get-fork-branch.outputs.branch }}
       galaxy-head-sha: ${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
       repositories: ${{ steps.discover.outputs.repositories }}
       chunk-count: ${{ steps.discover.outputs.chunk-count }}
@@ -31,16 +33,16 @@ jobs:
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
         comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
         reaction-type: hooray
-    - name: Determine fork and branch of the Galaxy to be used
-      uses: bernt-matthias/planemo-ci-action@master
-      id: get-repo
-      with:
-        get-repo: true
-        galaxy-branch: ${{ github.event.client_payload.slash_command.args.named.branch }}
-        galaxy-fork: ${{ github.event.client_payload.slash_command.args.named.fork }}
+    - name: Set galaxy fork and branch
+      id: get-fork-branch
+      run: |
+        TMP="${{ github.event.client_payload.slash_command.args.named.fork }}"
+        echo "::set-output name=fork::${TMP:-$GALAXY_FORK}"
+        TMP="${{ github.event.client_payload.slash_command.args.named.branch }}"
+        echo "::set-output name=branch::${TMP:-$GALAXY_BRANCH}"
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
-      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-repo.outputs.fork }}/galaxy refs/heads/${{ steps.get-repo.outputs.branch }} | cut -f1)"
+      run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ steps.get-fork-branch.outputs.fork }}/galaxy refs/heads/${{ steps.get-fork-branch.outputs.branch }} | cut -f1)"
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -64,8 +66,8 @@ jobs:
       id: discover
       with:
         create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
-        galaxy-branch: ${{ steps.get-repo.outputs.branch }}
-        galaxy-fork: ${{ steps.get-repo.outputs.fork }}
+        galaxy-branch: ${{ steps.get-fork-branch.outputs.branch }}
+        galaxy-fork: ${{ steps.get-fork-branch.outputs.fork }}
         max-chunks: ${{ env.MAX_CHUNKS }}
         python-version: ${{ matrix.python-version }}
     - name: Show repository list
