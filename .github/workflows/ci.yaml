@@ -6,7 +6,7 @@ on:
   repository_dispatch:
     types: [run-all-tool-tests-command]
 env:
-  max_chunks: 40
+  MAX_CHUNKS: 40
 jobs:
   setup:
     name: setup cache
