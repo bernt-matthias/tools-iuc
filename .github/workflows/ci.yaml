@@ -12,7 +12,7 @@ env:
 jobs:
   setup:
     name: setup cache
-    # todo restore if: github.repository_owner == 'galaxyproject'
+    # TODO restore if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     outputs:
       fork: ${{ steps.get-fork-branch.outputs.fork }}
