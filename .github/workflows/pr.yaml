@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       galaxy-head-sha: ${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
-      commit-range: ${{ steps.discover.outputs.commit-range }}
       repository-list: ${{ steps.discover.outputs.repository-list }}
       tool-list: ${{ steps.discover.outputs.tool-list }}
       chunk-count: ${{ steps.discover.outputs.chunk-count }}
@@ -55,8 +54,10 @@ jobs:
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ steps.get-galaxy-sha.outputs.galaxy-head-sha }}
     # Install the `wheel` package so that when installing other packages which
     # are not available as wheels, pip will build a wheel for them, which can be cached.
+    - name: Install wheel
+      run: pip install wheel
     - name: Install flake8
-      run: pip install wheel flake8 flake8-import-order
+      run: pip install flake8 flake8-import-order
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0
@@ -104,13 +105,13 @@ jobs:
       with:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
-    - name: Planemo lint 
+    - name: Planemo lint
       uses: bernt-matthias/planemo-ci-action@master
       id: lint
       with:
         lint-mode: true
         repository-list: ${{ needs.setup.outputs.repository-list }}
-        tool-list: ${{ needs.setup.outputs.tool-list }} 
+        tool-list: ${{ needs.setup.outputs.tool-list }}
 
   # flake8 of Python scripts in the changed repositories
   flake8:
@@ -239,7 +240,6 @@ jobs:
       with:
         path: ~/.planemo
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
-
     - name: Planemo test
       uses: bernt-matthias/planemo-ci-action@master
       id: test
@@ -295,7 +295,7 @@ jobs:
       uses: bernt-matthias/planemo-ci-action@master
       id: check
       with:
-        check-outputs: true
+        check-mode: true
 
   # deploy the tools to the toolsheds (first TTS for testing)
   deploy:
