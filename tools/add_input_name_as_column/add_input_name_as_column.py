@@ -1,7 +1,6 @@
 import argparse
 import io
 
-
 def Parser():
     the_parser = argparse.ArgumentParser(description="add label to last column of file")
     the_parser.add_argument('--input', required=True, action="store", type=str, help="input tabular file")
