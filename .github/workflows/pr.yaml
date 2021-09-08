@@ -121,7 +121,7 @@ jobs:
   lint:
     name: Lint tool-list
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '' }}
+    if: ${{ github.event_name != 'repository-dispatch' && (needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -162,7 +162,7 @@ jobs:
   flake8:
     name: Lint Python scripts
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -196,7 +196,7 @@ jobs:
   lintr:
     name: Lint R scripts
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -310,6 +310,12 @@ jobs:
         chunk: ${{ matrix.chunk }}
         chunk-count: ${{ needs.setup.outputs.chunk-count }}
         update-test-data: ${{ needs.setup.outputs.update-test-data }}
+    - uses: actions/upload-artifact@v2
+      with:
+        name: 'Tool test output ${{ matrix.chunk }}'
+        path: upload
+    # push updated test data
+    # - if no test data was updated then create a note (otherwise the commit should be sufficient)
     - name: Push updated test data
       if: ${{ needs.setup.outputs.update-test-data }}
       id: push-updated-test-data
@@ -325,26 +331,22 @@ jobs:
             echo "::set-output name=number-of-changed-files::0"
           fi
     - name: Create URL to the run output
-      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' }}
+      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' && steps.push-updated-test-data.outputs.number-of-changed-files != 0 }}
       id: vars
       run: echo "::set-output name=run-url::https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
     - name: Create comment
-      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' }}
+      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' && steps.push-updated-test-data.outputs.number-of-changed-files != 0 }}
       uses: peter-evans/create-or-update-comment@v1
       with:
         token: ${{ secrets.PAT }}
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
         issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
         body: |
-          Summary: ${{ steps.push-updated-test-data.outputs.number-of-changed-files }} files changed
+          No test data was updated
 
           [Find all tool test results here][1]
 
           [1]: ${{ steps.vars.outputs.run-url }}
-    - uses: actions/upload-artifact@v2
-      with:
-        name: 'Tool test output ${{ matrix.chunk }}'
-        path: upload
 
   # - combine the results of the test chunks (which will never fail due
   #   to `|| true`) and create a global test report as json and html which
@@ -354,7 +356,7 @@ jobs:
   combine_outputs:
     name: Combine chunked test results
     needs: [setup, test]
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -394,7 +396,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
+    if: ${{ github.event_name != 'repository-dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -435,28 +437,9 @@ jobs:
   determine-success:
     name: Check workflow success
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ always() && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
+    if: ${{ always() && github.event_name != 'repository-dispatch' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
-    - name: Create URL to the run output
-      if: ${{ github.event.client_payload.slash_command.command == 'run-all-tool-tests' }}
-      id: vars
-      run: echo "::set-output name=run-url::https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-    - name: Create comment
-      if: ${{ github.event.client_payload.slash_command.command == 'run-all-tool-tests' }}
-      uses: peter-evans/create-or-update-comment@v1
-      with:
-        token: ${{ secrets.PAT }}
-        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-        issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
-        body: |
-          Summary:
-
-          ${{ steps.combine.outputs.statistics }}
-
-          [Find all tool test results here][1]
-
-          [1]: ${{ steps.vars.outputs.run-url }}
     - name: Check tool lint status
       if: ${{ needs.lint.result != 'success' && needs.flake8.result != 'skipped' }}
       run: exit 1
