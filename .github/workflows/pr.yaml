@@ -65,8 +65,8 @@ jobs:
           echo "::set-output name=ref::${{github.event.client_payload.pull_request.head.ref}}"
         else
           echo "::set-output name=update-test-data::false"
-          echo "::set-output name=repository::''"
-          echo "::set-output name=ref::''"
+          echo "::set-output name=repository::"
+          echo "::set-output name=ref::"
         fi
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
