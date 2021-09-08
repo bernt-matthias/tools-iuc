@@ -121,7 +121,7 @@ jobs:
   lint:
     name: Lint tool-list
     needs: setup
-    if: ${{ github.event_name != 'repository-dispatch' && (needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '') }}
+    if: ${{ github.event_name != 'repository_dispatch' && (needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -162,7 +162,7 @@ jobs:
   flake8:
     name: Lint Python scripts
     needs: setup
-    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -196,7 +196,7 @@ jobs:
   lintr:
     name: Lint R scripts
     needs: setup
-    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -356,7 +356,7 @@ jobs:
   combine_outputs:
     name: Combine chunked test results
     needs: [setup, test]
-    if: ${{ github.event_name != 'repository-dispatch' && needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -396,7 +396,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ github.event_name != 'repository-dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
+    if: ${{ github.event_name != 'repository_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -437,7 +437,7 @@ jobs:
   determine-success:
     name: Check workflow success
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ always() && github.event_name != 'repository-dispatch' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
+    if: ${{ always() && github.event_name != 'repository_dispatch' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
     - name: Check tool lint status
