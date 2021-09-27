@@ -1,5 +1,9 @@
 name: Galaxy Tool Linting and Tests for push and PR
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  repository_dispatch:
+    types: [update-test-data-command]
 env:
   GALAXY_FORK: galaxyproject
   GALAXY_BRANCH: release_21.05
@@ -26,6 +30,9 @@ jobs:
       tool-list: ${{ steps.discover.outputs.tool-list }}
       chunk-count: ${{ steps.discover.outputs.chunk-count }}
       chunk-list: ${{ steps.discover.outputs.chunk-list }}
+      update-test-data: ${{ steps.update-test-data.outputs.update-test-data }}
+      repository: ${{ steps.update-test-data.outputs.repository }}
+      ref: ${{ steps.update-test-data.outputs.ref }}
     strategy:
       matrix:
         python-version: ['3.7']
@@ -39,6 +46,33 @@ jobs:
         echo 'base_ref: ${{ github.base_ref }}'
         echo 'event.before: ${{ github.event.before }}'
         echo 'event.after: ${{ github.event.after }}'
+    - name: Dump the client payload context
+      env:
+        PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload.pull_request) }}
+      run: echo "$PAYLOAD_CONTEXT"
+    - name: Add reaction to update-test-data slash command
+      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' }}
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        token: ${{ secrets.PAT }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+        reaction-type: hooray
+    # for running the update-test-data slash command 
+    # - set update-test-data::true and false otherwise
+    # - set repository / ref to the PR fork name / latest SHA and '' otherwise (which is the default for the checkout action)
+    - name: Set variables depending on update-test-data for slash commands
+      id: update-test-data
+      run: |
+        if [ -n "${{ github.event.client_payload.slash_command.command}}" ]; then
+          echo "::set-output name=update-test-data::true"
+          echo "::set-output name=repository::${{github.event.client_payload.pull_request.head.repo.full_name}}"
+          echo "::set-output name=ref::${{github.event.client_payload.pull_request.head.ref}}"
+        else
+          echo "::set-output name=update-test-data::false"
+          echo "::set-output name=repository::"
+          echo "::set-output name=ref::"
+        fi
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
       run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ env.GALAXY_FORK }}/galaxy refs/heads/${{ env.GALAXY_BRANCH }} | cut -f1)"
@@ -65,9 +99,11 @@ jobs:
       run: pip install flake8 flake8-import-order
     - uses: actions/checkout@v2
       with:
+        repository: ${{ steps.update-test-data.outputs.repository }}
+        ref: ${{ steps.update-test-data.outputs.ref }}
         fetch-depth: 0
     - name: Fake a Planemo run to update cache and determine commit range, repositories, and chunks
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
       id: discover
       with:
         create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
@@ -75,6 +111,7 @@ jobs:
         galaxy-branch: ${{ env.GALAXY_BRANCH }}
         max-chunks: ${{ env.MAX_CHUNKS }}
         python-version: ${{ matrix.python-version }}
+        update-test-data: ${{ steps.update-test-data.outputs.update-test-data }}
     - name: Show commit range
       run: echo '${{ steps.discover.outputs.commit-range }}'
     - name: Show repository list
@@ -89,7 +126,7 @@ jobs:
   lint:
     name: Lint tool-list
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && (needs.setup.outputs.repository-list != '' || needs.setup.outputs.tool-list != '') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -100,6 +137,8 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
+        repository: ${{ needs.setup.outputs.repository }}
+        ref: ${{ needs.setup.outputs.ref }}
         fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
@@ -111,7 +150,8 @@ jobs:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Planemo lint
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       id: lint
       with:
         mode: lint
@@ -127,7 +167,7 @@ jobs:
   flake8:
     name: Lint Python scripts
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -136,6 +176,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        repository: ${{ needs.setup.outputs.repository }}
+        ref: ${{ needs.setup.outputs.ref }}
         fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
@@ -159,7 +201,7 @@ jobs:
   lintr:
     name: Lint R scripts
     needs: setup
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -168,6 +210,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        repository: ${{ needs.setup.outputs.repository }}
+        ref: ${{ needs.setup.outputs.ref }}
         fetch-depth: 1
     - uses: r-lib/actions/setup-r@master
       with:
@@ -241,6 +285,8 @@ jobs:
     # and use it as the current working directory
     - uses: actions/checkout@v2
       with:
+        repository: ${{ needs.setup.outputs.repository }}
+        ref: ${{ needs.setup.outputs.ref }}
         fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
@@ -258,7 +304,8 @@ jobs:
         path: ~/.planemo
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Planemo test
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       id: test
       with:
         mode: test
@@ -267,10 +314,44 @@ jobs:
         galaxy-branch: ${{ env.GALAXY_BRANCH }}
         chunk: ${{ matrix.chunk }}
         chunk-count: ${{ needs.setup.outputs.chunk-count }}
+        update-test-data: ${{ needs.setup.outputs.update-test-data }}
     - uses: actions/upload-artifact@v2
       with:
         name: 'Tool test output ${{ matrix.chunk }}'
         path: upload
+    # push updated test data
+    # - if no test data was updated then create a note (otherwise the commit should be sufficient)
+    - name: Push updated test data
+      if: ${{ needs.setup.outputs.update-test-data }}
+      id: push-updated-test-data
+      run: |
+          set -x
+          if ! git diff --diff-filter=M --exit-code >& /dev/null; then
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git commit -m "update test data" .
+            git push
+            echo "::set-output name=number-of-changed-files::$(git diff HEAD^..HEAD --name-only | wc -l)"
+          else
+            echo "::set-output name=number-of-changed-files::0"
+          fi
+    - name: Create URL to the run output
+      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' && steps.push-updated-test-data.outputs.number-of-changed-files != 0 }}
+      id: vars
+      run: echo "::set-output name=run-url::https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+    - name: Create comment
+      if: ${{ github.event.client_payload.slash_command.command == 'update-test-data' && steps.push-updated-test-data.outputs.number-of-changed-files != 0 }}
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        token: ${{ secrets.PAT }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+        body: |
+          No test data was updated
+
+          [Find all tool test results here][1]
+
+          [1]: ${{ steps.vars.outputs.run-url }}
 
   # - combine the results of the test chunks (which will never fail due
   #   to `|| true`) and create a global test report as json and html which
@@ -280,7 +361,7 @@ jobs:
   combine_outputs:
     name: Combine chunked test results
     needs: [setup, test]
-    if: ${{ needs.setup.outputs.repository-list != '' }}
+    if: ${{ github.event_name != 'repository_dispatch' && needs.setup.outputs.repository-list != '' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -299,7 +380,8 @@ jobs:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Combine outputs
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       id: combine
       with:
         mode: combine
@@ -309,7 +391,8 @@ jobs:
         name: 'All tool test results'
         path: upload
     - name: Check outputs
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       id: check
       with:
         mode: check
@@ -318,7 +401,7 @@ jobs:
   deploy:
     name: Deploy
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
+    if: ${{ github.event_name != 'repository_dispatch' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' ) && github.repository_owner == 'galaxyproject' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -326,6 +409,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        repository: ${{ needs.setup.outputs.repository }}
+        ref: ${{ needs.setup.outputs.ref }}
         fetch-depth: 1
     - uses: actions/setup-python@v1
       with:
@@ -337,7 +422,8 @@ jobs:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ needs.setup.outputs.galaxy-head-sha }}
     - name: Deploy on testtoolshed
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       with:
         mode: deploy
         repository-list: ${{ needs.setup.outputs.repository-list }}
@@ -345,7 +431,8 @@ jobs:
         shed-key: ${{ secrets.TTS_API_KEY }}
       continue-on-error: true
     - name: Deploy on toolshed
-      uses: galaxyproject/planemo-ci-action@v1
+      uses: bernt-matthias/planemo-ci-action@topic/update-test-data
+      # uses: galaxyproject/planemo-ci-action@v1
       with:
         mode: deploy
         repository-list: ${{ needs.setup.outputs.repository-list }}
@@ -355,7 +442,7 @@ jobs:
   determine-success:
     name: Check workflow success
     needs: [setup, lint, flake8, lintr, combine_outputs]
-    if: ${{ always() && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
+    if: ${{ always() && github.event_name != 'repository_dispatch' && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/main' }}
     runs-on: ubuntu-latest
     steps:
     - name: Check tool lint status
