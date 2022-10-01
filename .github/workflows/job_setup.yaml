@@ -102,6 +102,10 @@ jobs:
         echo 'base_ref: ${{ github.base_ref }}'
         echo 'event.before: ${{ github.event.before }}'
         echo 'event.after: ${{ github.event.after }}'
+    - name: Print FB 
+      run: |
+        echo 'fork: ${{ needs.fork-branch.outputs.galaxy-fork }}'
+        echo 'branch: ${{ needs.fork-branch.outputs.galaxy-branch }}'
     - name: Determine latest commit in the Galaxy repo
       id: get-galaxy-sha
       run: echo "::set-output name=galaxy-head-sha::$(git ls-remote https://github.com/${{ needs.fork-branch.outputs.galaxy-fork }}/galaxy refs/heads/${{ needs.fork-branch.outputs.galaxy-branch }} | cut -f1)"

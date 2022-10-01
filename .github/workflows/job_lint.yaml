@@ -43,7 +43,7 @@ on:
         type: string
     outputs:
       result:
-        description: ""
+        description: "Result of the lint jobs"
         value: ${{ jobs.lint-success.result }}
 
 jobs:

@@ -46,7 +46,7 @@ on:
         required: false
     outputs:
       result:
-        description: ""
+        description: "Result of the testing"
         value: ${{ jobs.test-success.result }}
 
 jobs:
