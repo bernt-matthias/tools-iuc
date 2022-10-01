@@ -2,14 +2,18 @@ name: tools-iuc
 on:
   workflow_call:
     inputs:
+      repository-list:
+        description: 'list of repositories to test'
+        required: true
+        type: string
+      galaxy-head-sha:
+        description: 'hash of the latest commit in the Galaxy repo'
+        required: true
+        type: string
       python-version-list:
         description: 'Python versions (stringified JSON array)'
         default: "[\"3.7\"]"
         required: false
-        type: string
-      repository-list:
-        description: 'list of repositories to test'
-        required: true
         type: string
     secrets:
       PAT:
