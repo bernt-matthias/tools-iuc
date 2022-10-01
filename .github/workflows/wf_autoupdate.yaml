@@ -56,8 +56,8 @@ jobs:
         pip3 install wheel planemo
 
         # # git credentials
-        # git config --global user.email "m.bernt@ufz.de"
-        # git config --global user.name "Matthias Bernt"
+        git config --global user.email "m.bernt@ufz.de"
+        git config --global user.name "Matthias Bernt"
         echo ${{ secrets.PAT }} > token.txt
         gh auth login --with-token < token.txt
         
