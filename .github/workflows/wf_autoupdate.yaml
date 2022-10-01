@@ -76,7 +76,8 @@ jobs:
         # echo "GH help"
         # gh --help
 
-        # TODO tool-collections
+        # TODO tool-collections (problem is that branch tool-collections/sanmtools/samtools-XYZ can not be crated, if
+        # tool-collections/sanmtools already exists)
         REPOS=$(echo "${{ inputs.repository-list }}" | grep "^tools/")
         
         echo "PR list"
@@ -104,42 +105,43 @@ jobs:
           planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
           rm -f tool_test_output.*
 
-        #   if [[ $(git diff) ]]
-        #   then
-        #     TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
+          if [[ $(git diff) ]]
+          then
+            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
 
-        #     # first check if a closed PR exists with the same title - if so, we don't continue
-        #     if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
-        #     then
-        #       echo "Adding..."
-        #       git add .
+            # first check if a closed PR exists with the same title - if so, we don't continue
+            if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
+            then
+              echo "Adding..."
+              git add .
 
-        #       echo "Committing..."
-        #       git commit -m "$TITLE"
+              echo "Committing..."
+              git commit -m "$TITLE"
 
-        #       echo "Push branch to remote..."
-        #       git push --set-upstream origin $REPO
+              echo "Push branch to remote..."
+              git push --set-upstream origin autoupdate/$REPO
 
-        #       OLD_TITLE=$(gh pr list --limit 1000 | grep planemo-autoupdate:$REPO | cut -f 2)
-        #       if [[ $OLD_TITLE ]] # just need to update PR title
-        #       then
-        #         if [[ $OLD_TITLE == *\) ]] # older PRs
-        #         then
-        #           NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 4 -d ' ' && echo  " to " && echo $TITLE | cut -f 7 -d ' ')
-        #         else # newer PRs
-        #           NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
-        #         fi
-        #         PR_NUMBER=$(gh pr list --limit 1000 -A planemo-autoupdate | grep planemo-autoupdate:$REPO | cut -f 1)
-        #         gh pr edit $PR_NUMBER -t "$NEW_TITLE"
-        #       else # we need to create a PR
-        #         echo "Creating a PR..."
-        #         gh pr create --base master --head planemo-autoupdate:$REPO --title "$TITLE" --repo galaxyproject/tools-iuc --body-file $BASEDIR/body.txt
-        #         # TODO gh pr edit --add-label "autoupdate"
-        #       fi
-        #     fi
-        #   fi
-        #   # clean up for the next tool
-        #   git checkout -- $REPO
+              OLD_TITLE=$(gh pr list --limit 1000 | grep planemo-autoupdate/$REPO | cut -f 2)
+              if [[ $OLD_TITLE ]] # just need to update PR title
+              then
+                if [[ $OLD_TITLE == *\) ]] # older PRs
+                then
+                  NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 4 -d ' ' && echo  " to " && echo $TITLE | cut -f 7 -d ' ')
+                else # newer PRs
+                  NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
+                fi
+                # TODO check if -A AUTHOR can be added back to `gh pr list`
+                PR_NUMBER=$(gh pr list --limit 1000 | grep planemo-autoupdate/$REPO | cut -f 1)
+                gh pr edit $PR_NUMBER -t "$NEW_TITLE"
+              else # we need to create a PR
+                echo "Creating a PR..."
+                gh pr create --base master --head planemo-autoupdate/$REPO --title "$TITLE" --repo bernt-matthias/tools-iuc --body-file $BASEDIR/body.txt
+                # TODO add --label "autoupdate"
+              fi
+            fi
+          fi
+          # clean up for the next tool
+          git checkout -- $REPO
         done
 
 # TODO finish reaction for on slash command
