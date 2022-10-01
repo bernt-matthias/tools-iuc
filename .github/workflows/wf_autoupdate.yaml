@@ -63,8 +63,9 @@ jobs:
         # gh auth login --with-token < token.txt
         
         BASEDIR=`pwd`
-        ls $BASEDIR/*
-        cd tools-iuc
+        echo "ls $BASEDIR/"
+        ls $BASEDIR/
+        # cd tools-iuc
         # echo "Adding upstream..."
         # git remote add upstream https://github.com/galaxyproject/tools-iuc.git
 
@@ -73,9 +74,10 @@ jobs:
 
         # echo "Pulling latest from upstream..."
         # git fetch --all
-
+        echo "repository-list:"
         echo ${{ inputs.repository-list }}
 
+        echo "GH help"
         gh --help
         # REPOS=$(planemo ci_find_repos tools/)
         # echo $REPOS
