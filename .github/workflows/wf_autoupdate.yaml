@@ -29,6 +29,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
+        token: ${{ secrets.PAT }}
         fetch-depth: 0
 
     # - uses: webfactory/ssh-agent@v0.4.1
@@ -71,10 +72,8 @@ jobs:
         echo "Getting git remote..."
         git remote -v
 
-        echo "Pulling latest from upstream..."
+        echo "Pulling latest..."
         git fetch --all
-        # echo "GH help"
-        # gh --help
 
         # TODO tool-collections (problem is that branch tool-collections/sanmtools/samtools-XYZ can not be crated, if
         # tool-collections/sanmtools already exists)
