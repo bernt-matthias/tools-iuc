@@ -68,47 +68,49 @@ jobs:
         # echo "Adding upstream..."
         # git remote add upstream https://github.com/galaxyproject/tools-iuc.git
 
-        # echo "Getting git remote..."
-        # git remote -v
+        echo "Getting git remote..."
+        git remote -v
 
-        # echo "Pulling latest from upstream..."
-        # git fetch --all
+        echo "Pulling latest from upstream..."
+        git fetch --all
         # echo "GH help"
         # gh --help
         
         REPOS="${{ inputs.repository-list }}"
+        
+        echo "PR list"
         gh pr list --limit 10000
         
-        # for REPO in $REPOS; do
-        #   # git checkout upstream/master
-        #   echo $REPO
-        #   # checkout branch, create if it doesn't exist
-        #   if [[ $(gh pr list --limit 10000 | grep planemo-autoupdate:$REPO.\s*OPEN) ]]
-        #   then
-        #     echo "PR exists, we will checkout the branch and add to it"
-        #     git checkout --track origin/$REPO
-        #   else
-        #     if [[ $(git branch -a --list origin/$REPO) ]]
-        #     then
-        #       echo "Branch exists without an open PR - deleting"
-        #       git push origin --delete $REPO
-        #     fi
-        #     echo "Creating branch and checking out"
-        #     git checkout -b $REPO upstream/master
-        #   fi
-        #   git branch
-        #   echo "Running autoupdate command..."
-        #   cd $REPO
-        #   planemo autoupdate . --skiplist $BASEDIR/autoupdate/tools-iuc_skip_list > $BASEDIR/autoupdate.log
-        #   rm -f tool_test_output.*
-        #   cd $BASEDIR/tools-iuc
+        for REPO in $REPOS; do
+          # git checkout upstream/master
+          echo $REPO
+          # checkout branch, create if it doesn't exist
+          if [[ $(gh pr list --limit 10000 | grep autoupdate/$REPO.\s*OPEN) ]]
+          then
+            echo "PR exists, we will checkout the branch and add to it"
+            git checkout --track origin/$REPO
+          else
+            if [[ $(git branch -a --list origin/$REPO) ]]
+            then
+              echo "Branch exists without an open PR - deleting"
+              git push origin --delete $REPO
+            fi
+            echo "Creating branch and checking out"
+            git checkout -b $REPO master
+          fi
+          git branch
+          echo "Running autoupdate command..."
+          cd $REPO
+          planemo autoupdate . --skiplist $BASEDIR/autoupdate/tools-iuc_skip_list > $BASEDIR/autoupdate.log
+          rm -f tool_test_output.*
+          cd $BASEDIR/tools-iuc
 
         #   if [[ $(git diff) ]]
         #   then
         #     TITLE=$(python3 $BASEDIR/autoupdate/pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
 
         #     # first check if a closed PR exists with the same title - if so, we don't continue
-        #     if [[ ! $(gh pr list -s closed --limit 1000 -A planemo-autoupdate | grep "$TITLE" | grep CLOSED) ]]
+        #     if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
         #     then
         #       echo "Adding..."
         #       git add .
@@ -119,7 +121,7 @@ jobs:
         #       echo "Push branch to remote..."
         #       git push --set-upstream origin $REPO
 
-        #       OLD_TITLE=$(gh pr list --limit 1000 -A planemo-autoupdate | grep planemo-autoupdate:$REPO | cut -f 2)
+        #       OLD_TITLE=$(gh pr list --limit 1000 | grep planemo-autoupdate:$REPO | cut -f 2)
         #       if [[ $OLD_TITLE ]] # just need to update PR title
         #       then
         #         if [[ $OLD_TITLE == *\) ]] # older PRs
@@ -139,4 +141,4 @@ jobs:
         #   fi
         #   # clean up for the next tool
         #   git checkout -- $REPO
-        # done
+        done
