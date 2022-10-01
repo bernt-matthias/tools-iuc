@@ -1,0 +1,127 @@
+name: tools-iuc
+on:
+  workflow_call:
+    inputs:
+      python-version-list:
+        description: 'Python versions (stringified JSON array)'
+        default: "[\"3.7\"]"
+        required: false
+        type: string
+  
+jobs:
+  autoupdate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJson(inputs.python-version-list) }} 
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # - uses: webfactory/ssh-agent@v0.4.1
+    #   with:
+    #     ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Cache .cache/pip
+      uses: actions/cache@v2
+      id: cache-pip
+      with:
+        path: ~/.cache/pip
+        key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ inputs.galaxy-head-sha }}
+    - name: Cache .planemo
+      if: ${{ inputs.cache-planemo }}
+      uses: actions/cache@v2
+      id: cache-planemo
+      with:
+        path: ~/.planemo
+        key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ inputs.galaxy-head-sha }}
+
+    # Runs a set of commands using the runners shell
+    - name: Run a multi-line script
+      run: |
+        
+        echo "Installing planemo..."
+        pip3 install planemo
+
+        # git credentials
+        git config --global user.email "m.bernt@ufz.de"
+        git config --global user.name "planemo-autoupdate"
+        echo ${{ secrets.PAT }} > token.txt
+        gh auth login --with-token < token.txt
+        
+        BASEDIR=`pwd`
+        ls $BASEDIR/*
+        cd tools-iuc
+        # echo "Adding upstream..."
+        # git remote add upstream https://github.com/galaxyproject/tools-iuc.git
+
+        # echo "Getting git remote..."
+        # git remote -v
+
+        # echo "Pulling latest from upstream..."
+        # git fetch --all
+        
+        # REPOS=$(planemo ci_find_repos tools/)
+        # echo $REPOS
+        # for REPO in $REPOS; do
+        #   # git checkout upstream/master
+        #   echo $REPO
+        #   # checkout branch, create if it doesn't exist
+        #   if [[ $(gh pr list --limit 10000 | grep planemo-autoupdate:$REPO.\s*OPEN) ]]
+        #   then
+        #     echo "PR exists, we will checkout the branch and add to it"
+        #     git checkout --track origin/$REPO
+        #   else
+        #     if [[ $(git branch -a --list origin/$REPO) ]]
+        #     then
+        #       echo "Branch exists without an open PR - deleting"
+        #       git push origin --delete $REPO
+        #     fi
+        #     echo "Creating branch and checking out"
+        #     git checkout -b $REPO upstream/master
+        #   fi
+        #   git branch
+        #   echo "Running autoupdate command..."
+        #   cd $REPO
+        #   planemo autoupdate . --skiplist $BASEDIR/autoupdate/tools-iuc_skip_list > $BASEDIR/autoupdate.log
+        #   rm -f tool_test_output.*
+        #   cd $BASEDIR/tools-iuc
+
+        #   if [[ $(git diff) ]]
+        #   then
+        #     TITLE=$(python3 $BASEDIR/autoupdate/pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
+
+        #     # first check if a closed PR exists with the same title - if so, we don't continue
+        #     if [[ ! $(gh pr list -s closed --limit 1000 -A planemo-autoupdate | grep "$TITLE" | grep CLOSED) ]]
+        #     then
+        #       echo "Adding..."
+        #       git add .
+
+        #       echo "Committing..."
+        #       git commit -m "$TITLE"
+
+        #       echo "Push branch to remote..."
+        #       git push --set-upstream origin $REPO
+
+        #       OLD_TITLE=$(gh pr list --limit 1000 -A planemo-autoupdate | grep planemo-autoupdate:$REPO | cut -f 2)
+        #       if [[ $OLD_TITLE ]] # just need to update PR title
+        #       then
+        #         if [[ $OLD_TITLE == *\) ]] # older PRs
+        #         then
+        #           NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 4 -d ' ' && echo  " to " && echo $TITLE | cut -f 7 -d ' ')
+        #         else # newer PRs
+        #           NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
+        #         fi
+        #         PR_NUMBER=$(gh pr list --limit 1000 -A planemo-autoupdate | grep planemo-autoupdate:$REPO | cut -f 1)
+        #         gh pr edit $PR_NUMBER -t "$NEW_TITLE"
+        #       else # we need to create a PR
+        #         echo "Creating a PR..."
+        #         gh pr create --base master --head planemo-autoupdate:$REPO --title "$TITLE" --repo galaxyproject/tools-iuc --body-file $BASEDIR/body.txt
+        #       fi
+        #     fi
+        #   fi
+        #   # clean up for the next tool
+        #   git checkout -- $REPO
+        # done
