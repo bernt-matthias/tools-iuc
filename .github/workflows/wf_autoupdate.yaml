@@ -7,6 +7,10 @@ on:
         default: "[\"3.7\"]"
         required: false
         type: string
+      repository-list:
+        description: 'list of repositories to test'
+        required: true
+        type: string
     secrets:
       PAT:
         required: false
@@ -48,11 +52,11 @@ jobs:
         echo "Installing planemo..."
         pip3 install planemo
 
-        # git credentials
-        git config --global user.email "m.bernt@ufz.de"
-        git config --global user.name "planemo-autoupdate"
-        echo ${{ secrets.PAT }} > token.txt
-        gh auth login --with-token < token.txt
+        # # git credentials
+        # git config --global user.email "m.bernt@ufz.de"
+        # git config --global user.name "planemo-autoupdate"
+        # echo ${{ secrets.PAT }} > token.txt
+        # gh auth login --with-token < token.txt
         
         BASEDIR=`pwd`
         ls $BASEDIR/*
@@ -65,7 +69,10 @@ jobs:
 
         # echo "Pulling latest from upstream..."
         # git fetch --all
-        
+
+        echo ${{ inputs.repository-list }}
+
+        gh --help
         # REPOS=$(planemo ci_find_repos tools/)
         # echo $REPOS
         # for REPO in $REPOS; do
