@@ -57,7 +57,7 @@ jobs:
 
         # # git credentials
         # git config --global user.email "m.bernt@ufz.de"
-        # git config --global user.name "planemo-autoupdate"
+        # git config --global user.name "Matthias Bernt"
         echo ${{ secrets.PAT }} > token.txt
         gh auth login --with-token < token.txt
         
@@ -143,5 +143,12 @@ jobs:
           # clean up for the next tool
           git checkout -- $REPO
         done
-
-# TODO finish reaction for on slash command
+    - name: Create comment
+      if: ${{ github.event.client_payload.slash_command.command == 'run-autoupdate' }}
+      uses: peter-evans/create-or-update-comment@v1
+      with:
+        token: ${{ secrets.PAT }}
+        repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+        issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
+        body: |
+          Autoupdate finished
