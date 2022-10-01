@@ -7,6 +7,9 @@ on:
         default: "[\"3.7\"]"
         required: false
         type: string
+    secrets:
+      PAT:
+        required: false
   
 jobs:
   autoupdate:
