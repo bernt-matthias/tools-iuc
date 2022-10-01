@@ -88,26 +88,24 @@ jobs:
           if [[ $(gh pr list --limit 10000 | grep autoupdate/$REPO.\s*OPEN) ]]
           then
             echo "PR exists, we will checkout the branch and add to it"
-            git checkout --track origin/$REPO
+            git checkout --track origin/autoupdate/$REPO
           else
-            if [[ $(git branch -a --list origin/$REPO) ]]
+            if [[ $(git branch -a --list origin/autoupdate/$REPO) ]]
             then
               echo "Branch exists without an open PR - deleting"
-              git push origin --delete $REPO
+              git push origin --delete autoupdate/$REPO
             fi
             echo "Creating branch and checking out"
-            git checkout -b $REPO master
+            git checkout -b autoupdate/$REPO master
           fi
           git branch
           echo "Running autoupdate command..."
-          cd $REPO
-          planemo autoupdate . --skiplist $BASEDIR/autoupdate/tools-iuc_skip_list > $BASEDIR/autoupdate.log
+          planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
           rm -f tool_test_output.*
-          cd $BASEDIR/tools-iuc
 
         #   if [[ $(git diff) ]]
         #   then
-        #     TITLE=$(python3 $BASEDIR/autoupdate/pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
+        #     TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
 
         #     # first check if a closed PR exists with the same title - if so, we don't continue
         #     if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
@@ -142,3 +140,5 @@ jobs:
         #   # clean up for the next tool
         #   git checkout -- $REPO
         done
+
+# TODO finish reaction for on slash command
