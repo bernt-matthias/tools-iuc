@@ -2,6 +2,7 @@ name: tools-iuc
 on:
   workflow_call:
     inputs:
+      # TODO using this will exclude tools from the skip list
       repository-list:
         description: 'list of repositories to test'
         required: true
@@ -42,7 +43,6 @@ jobs:
         path: ~/.cache/pip
         key: pip_cache_py_${{ matrix.python-version }}_gxy_${{ inputs.galaxy-head-sha }}
     - name: Cache .planemo
-      if: ${{ inputs.cache-planemo }}
       uses: actions/cache@v2
       id: cache-planemo
       with:
@@ -75,12 +75,13 @@ jobs:
         # echo "Pulling latest from upstream..."
         # git fetch --all
         echo "repository-list:"
-        echo ${{ inputs.repository-list }}
-
+        echo "${{ inputs.repository-list }}"
         echo "GH help"
         gh --help
-        # REPOS=$(planemo ci_find_repos tools/)
-        # echo $REPOS
+        
+        echo "echo REPOS"
+        REPOS="${{ inputs.repository-list }}"
+        echo $REPOS
         # for REPO in $REPOS; do
         #   # git checkout upstream/master
         #   echo $REPO
