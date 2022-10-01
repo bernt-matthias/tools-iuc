@@ -59,7 +59,7 @@ jobs:
         # # git credentials
         git config --global user.email "m.bernt@ufz.de"
         git config --global user.name "planemo-autoupdate"
-        echo ${{ secrets.PAT }} > token.txt
+        echo ${{ secrets.PAT_AU }} > token.txt
         gh auth login --with-token < token.txt
         
         BASEDIR=`pwd`
