@@ -75,8 +75,9 @@ jobs:
         git fetch --all
         # echo "GH help"
         # gh --help
-        
-        REPOS="${{ inputs.repository-list }}"
+
+        # TODO tool-collections
+        REPOS=$(echo "${{ inputs.repository-list }}" | grep "^tools/")
         
         echo "PR list"
         gh pr list --limit 10000
