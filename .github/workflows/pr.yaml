@@ -22,6 +22,7 @@ jobs:
       # default-galaxy-fork: galaxyproject
       # default-galaxy-branch: release_22.05
       max-chunks: 4
+      fetch-depth: 0
 
   # Lint changed repositories
   # - Planemo lint
