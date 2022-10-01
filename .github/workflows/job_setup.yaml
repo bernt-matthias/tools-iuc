@@ -139,8 +139,8 @@ jobs:
       id: discover
       with:
         create-cache: ${{ steps.cache-pip.outputs.cache-hit != 'true' || steps.cache-planemo.outputs.cache-hit != 'true' }}
-        galaxy-fork: ${{ inputs.galaxy-fork }}
-        galaxy-branch: ${{ inputs.galaxy-branch }}
+        galaxy-fork: ${{ needs.fork-branch.outputs.galaxy-fork }}
+        galaxy-branch: ${{ needs.fork-branch.outputs.galaxy-branch }}
         max-chunks: ${{ inputs.max-chunks }}
         python-version: ${{ matrix.python-version }}
     - name: Show commit range
