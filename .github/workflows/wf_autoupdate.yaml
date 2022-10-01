@@ -19,7 +19,6 @@ on:
     secrets:
       PAT:
         required: false
-  
 jobs:
   autoupdate:
     runs-on: ubuntu-latest
@@ -59,8 +58,8 @@ jobs:
         # # git credentials
         # git config --global user.email "m.bernt@ufz.de"
         # git config --global user.name "planemo-autoupdate"
-        # echo ${{ secrets.PAT }} > token.txt
-        # gh auth login --with-token < token.txt
+        echo ${{ secrets.PAT }} > token.txt
+        gh auth login --with-token < token.txt
         
         BASEDIR=`pwd`
         echo "ls $BASEDIR/"
@@ -134,6 +133,7 @@ jobs:
         #       else # we need to create a PR
         #         echo "Creating a PR..."
         #         gh pr create --base master --head planemo-autoupdate:$REPO --title "$TITLE" --repo galaxyproject/tools-iuc --body-file $BASEDIR/body.txt
+        #         # TODO gh pr edit --add-label "autoupdate"
         #       fi
         #     fi
         #   fi
