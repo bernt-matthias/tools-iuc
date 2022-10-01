@@ -54,7 +54,7 @@ jobs:
       run: |
         
         echo "Installing planemo..."
-        pip3 install planemo
+        pip3 install wheel planemo
 
         # # git credentials
         # git config --global user.email "m.bernt@ufz.de"
@@ -74,14 +74,12 @@ jobs:
 
         # echo "Pulling latest from upstream..."
         # git fetch --all
-        echo "repository-list:"
-        echo "${{ inputs.repository-list }}"
-        echo "GH help"
-        gh --help
+        # echo "GH help"
+        # gh --help
         
-        echo "echo REPOS"
         REPOS="${{ inputs.repository-list }}"
-        echo $REPOS
+        gh pr list --limit 10000
+        
         # for REPO in $REPOS; do
         #   # git checkout upstream/master
         #   echo $REPO
