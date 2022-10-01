@@ -57,7 +57,7 @@ jobs:
 
         # # git credentials
         git config --global user.email "m.bernt@ufz.de"
-        git config --global user.name "Matthias Bernt"
+        git config --global user.name "planemo-autoupdate"
         echo ${{ secrets.PAT }} > token.txt
         gh auth login --with-token < token.txt
         
@@ -112,11 +112,9 @@ jobs:
             # first check if a closed PR exists with the same title - if so, we don't continue
             if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
             then
-              echo "Adding..."
-              git add .
 
               echo "Committing..."
-              git commit -m "$TITLE"
+              git commit $REPO -m "$TITLE"
 
               echo "Push branch to remote..."
               git push --set-upstream origin autoupdate/$REPO
@@ -124,6 +122,7 @@ jobs:
               OLD_TITLE=$(gh pr list --limit 1000 | grep planemo-autoupdate/$REPO | cut -f 2)
               if [[ $OLD_TITLE ]] # just need to update PR title
               then
+                echo "Need to update title"
                 if [[ $OLD_TITLE == *\) ]] # older PRs
                 then
                   NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 4 -d ' ' && echo  " to " && echo $TITLE | cut -f 7 -d ' ')
@@ -135,7 +134,8 @@ jobs:
                 gh pr edit $PR_NUMBER -t "$NEW_TITLE"
               else # we need to create a PR
                 echo "Creating a PR..."
-                gh pr create --base master --head planemo-autoupdate/$REPO --title "$TITLE" --repo bernt-matthias/tools-iuc --body-file $BASEDIR/body.txt
+                gh pr create --base master --title "$TITLE" --repo bernt-matthias/tools-iuc --body-file $BASEDIR/body.txt
+                #  --head planemo-autoupdate/$REPO 
                 # TODO add --label "autoupdate"
               fi
             fi
