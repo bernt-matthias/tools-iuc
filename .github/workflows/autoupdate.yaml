@@ -5,6 +5,8 @@ on:
     - cron: '0 0 * * 1'
   repository_dispatch:
     types: [run-autoupdate-command]
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 jobs:
   setup:
     name: Setup cache and determine changed repositories
