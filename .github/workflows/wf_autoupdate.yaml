@@ -16,9 +16,9 @@ on:
         default: "[\"3.7\"]"
         required: false
         type: string
-    secrets:
-      PAT:
-        required: false
+    # secrets:
+    #   PAT:
+    #     required: false
 jobs:
   autoupdate:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        token: ${{ secrets.PAT }}
+        token: ${{ github.token }}
         fetch-depth: 0
 
     # - uses: webfactory/ssh-agent@v0.4.1
@@ -59,7 +59,7 @@ jobs:
         # # git credentials
         git config --global user.email "m.bernt@ufz.de"
         git config --global user.name "planemo-autoupdate"
-        echo ${{ secrets.PAT_AU }} > token.txt
+        echo ${{ github.token }} > token.txt
         gh auth login --with-token < token.txt
         
         BASEDIR=`pwd`
@@ -145,7 +145,7 @@ jobs:
       if: ${{ github.event.client_payload.slash_command.command == 'run-autoupdate' }}
       uses: peter-evans/create-or-update-comment@v1
       with:
-        token: ${{ secrets.PAT }}
+        token: ${{ github.token }}
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
         issue-number: ${{ github.event.client_payload.github.payload.issue.number }}
         body: |

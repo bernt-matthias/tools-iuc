@@ -13,8 +13,8 @@ jobs:
       # default-galaxy-fork: galaxyproject
       # default-galaxy-branch: release_22.05
       max-chunks: 40
-    secrets:
-      PAT: ${{ secrets.PAT }}
+    # secrets:
+    #   PAT: ${{ secrets.PAT }}
   test:
     name: Autoupdate
     needs: setup
