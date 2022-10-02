@@ -107,7 +107,7 @@ jobs:
           if [[ $(git diff) ]]
           then
             TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
-
+            echo "TITLE $TITLE"
             # first check if a closed PR for the same branch with the same title - if so, we don't continue
             if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
             then
