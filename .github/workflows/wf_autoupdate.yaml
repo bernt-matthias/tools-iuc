@@ -85,24 +85,24 @@ jobs:
         for REPO in $REPOS; do
           # git checkout upstream/master
           echo "Processing $REPO"
-          # # checkout branch, create if it doesn't exist
-          # if [[ $(gh pr list --limit 10000 | grep autoupdate/$REPO.\s*OPEN) ]]
-          # then
-          #   echo "PR exists, we will checkout the branch and add to it"
-          #   git checkout --track origin/autoupdate/$REPO
-          # else
-          #   if [[ $(git branch -a --list origin/autoupdate/$REPO) ]]
-          #   then
-          #     echo "Branch exists without an open PR - deleting"
-          #     git push origin --delete autoupdate/$REPO
-          #   fi
-          #   echo "Creating branch and checking out"
-          #   git checkout -b autoupdate/$REPO master
-          # fi
-          # echo "Checked out branch $(git branch --show-current)"
-          # echo "Running autoupdate command..."
-          # planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
-          # rm -f tool_test_output.*
+          # checkout branch, create if it doesn't exist
+          if [[ $(gh pr list --limit 10000 | grep autoupdate/$REPO.\s*OPEN) ]]
+          then
+            echo "PR exists, we will checkout the branch and add to it"
+            git checkout --track origin/autoupdate/$REPO
+          else
+            if [[ $(git branch -a --list origin/autoupdate/$REPO) ]]
+            then
+              echo "Branch exists without an open PR - deleting"
+              git push origin --delete autoupdate/$REPO
+            fi
+            echo "Creating branch and checking out"
+            git checkout -b autoupdate/$REPO master
+          fi
+          echo "Checked out branch $(git branch --show-current)"
+          echo "Running autoupdate command..."
+          planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
+          rm -f tool_test_output.*
 
           # if [[ $(git diff) ]]
           # then
