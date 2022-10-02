@@ -104,15 +104,15 @@ jobs:
           planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
           rm -f tool_test_output.*
 
-          # if [[ $(git diff) ]]
-          # then
-          #   TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
+          if [[ $(git diff) ]]
+          then
+            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
 
-          #   # first check if a closed PR for the same branch with the same title - if so, we don't continue
-          #   if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
-          #   then
+            # first check if a closed PR for the same branch with the same title - if so, we don't continue
+            if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
+            then
 
-          #     echo "Committing..."
+              echo "Committing..."
           #     git commit $REPO -m "$TITLE" --quiet
 
           #     echo "Push branch to remote..."
@@ -137,9 +137,9 @@ jobs:
           #       #  --head autoupdate/$REPO 
           #       break
           #     fi
-          #   fi
-          # fi
-          # # clean up for the next tool
+            fi
+          fi
+          # clean up for the next tool
           git checkout -- $REPO
         done
     - name: Create comment
