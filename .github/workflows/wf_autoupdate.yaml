@@ -108,8 +108,8 @@ jobs:
           then
             TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
 
-            # first check if a closed PR exists with the same title - if so, we don't continue
-            if [[ ! $(gh pr list -s closed --limit 1000 | grep "$TITLE" | grep CLOSED) ]]
+            # first check if a closed PR for the same branch with the same title - if so, we don't continue
+            if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
             then
 
               echo "Committing..."
@@ -128,12 +128,14 @@ jobs:
                 else # newer PRs
                   NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
                 fi
-                PR_NUMBER=$(gh pr list --limit 1000 | grep autoupdate/$REPO | cut -f 1)
-                gh pr edit $PR_NUMBER -t "$NEW_TITLE" --add-label "autoupdate"
+                PR_NUMBER=$(gh pr list --limit 1000 | grep autoupdate/$REPO | cut -f 1gh pr 
+                gh pr edit $PR_NUMBER -t "$NEW_TITLE" --add-label
               else # we need to create a PR
                 echo "Creating a PR..."
-                gh pr create --base master --title "$TITLE" --repo bernt-matthias/tools-iuc --body-file $BASEDIR/body.txt --label "autoupdate"
+                gh pr create --base master --title "$TITLE" --body-file $BASEDIR/body.txt --label "autoupdate"
+                # --repo bernt-matthias/tools-iuc 
                 #  --head autoupdate/$REPO 
+                break
               fi
             fi
           fi
