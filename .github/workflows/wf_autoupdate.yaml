@@ -76,7 +76,7 @@ jobs:
         git fetch --all
 
         # TODO tool-collections (problem is that branch tool-collections/sanmtools/samtools-XYZ can not be crated, if
-        # tool-collections/sanmtools already exists)
+        # tool-collections/samtools already exists)
         REPOS=$(echo "${{ inputs.repository-list }}" | grep "^tools/")
         
         echo "PR list"
@@ -128,9 +128,8 @@ jobs:
                 else # newer PRs
                   NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
                 fi
-                # TODO check if -A AUTHOR can be added back to `gh pr list`
                 PR_NUMBER=$(gh pr list --limit 1000 | grep autoupdate/$REPO | cut -f 1)
-                gh pr edit $PR_NUMBER -t "$NEW_TITLE"
+                gh pr edit $PR_NUMBER -t "$NEW_TITLE" --add-label "autoupdate"
               else # we need to create a PR
                 echo "Creating a PR..."
                 gh pr create --base master --title "$TITLE" --repo bernt-matthias/tools-iuc --body-file $BASEDIR/body.txt --label "autoupdate"
