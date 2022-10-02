@@ -49,8 +49,15 @@ jobs:
         path: ~/.planemo
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ inputs.galaxy-head-sha }}
 
+    - name: Planemo autoupdate
+      uses: bernt-matthias/planemo-ci-action@topic/autoupdate
+      id: autoupdate
+      with:
+        mode: autoupdate
+        repository-list: ${{ inputs.repository-list }}
+
     # Runs a set of commands using the runners shell
-    - name: Run a multi-line script
+    - name: Create or update PRs for changed repositories
       run: |
         
         echo "Installing planemo..."
@@ -89,13 +96,13 @@ jobs:
             git checkout -b autoupdate/$REPO master
           fi
           echo "Checked out branch $(git branch --show-current)"
-          echo "Running autoupdate command..."
-          planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
-          rm -f tool_test_output.*
 
-          if [[ $(git diff) ]]
+          if [[ $(git diff $REPO) ]]
           then
-            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
+            OLD_VERSION=$(git diff $REPO | grep "^-.*TOOL_VERSION" | head | sed 's@.*>\(.*\)<.*@\1@')
+            NEW_VERSION=$(git diff $REPO | grep "^-.*TOOL_VERSION" | head | sed 's@.*>\(.*\)<.*@\1@')
+            
+            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --old_version "$OLD_VERSION" --new_version "$NEW_VERSION" --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
             echo "TITLE $TITLE"
             # first check if a closed PR for the same branch with the same title - if so, we don't continue
             if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
@@ -106,20 +113,16 @@ jobs:
 
               echo "Push branch to remote..."
               git push --set-upstream origin autoupdate/$REPO --quiet
-              OLD_TITLE=$(gh pr view autoupdate/$REPO --json title --jq '.[]' || true 2> /dev/null)
-              echo "OLD TITLE $OLD_TITLE"
-              if [[ $OLD_TITLE ]] # just need to update PR title
+
+              # determine PR number if a PR already exists
+              PR_NUMBER=$(gh pr view autoupdate/$REPO --json number --jq '.[]' || true 2> /dev/null)
+              if [[ -n "$PR_NUMBER" ]] # just need to update PR title
               then
                 echo "Need to update title"
-                NEW_TITLE=$(echo $OLD_TITLE | cut --complement -f 7 -d ' ' && echo $TITLE | cut -f 7 -d ' ')
-                echo "NEW TITLE $NEW_TITLE"
-                PR_NUMBER=$(gh pr list --limit 1000 | grep autoupdate/$REPO | cut -f 1)
-                gh pr edit $PR_NUMBER --title "$NEW_TITLE" --add-label
+                gh pr edit $PR_NUMBER --title "$TITLE" --add-label
               else # we need to create a PR
                 echo "Creating a PR..."
                 gh pr create --base master --title "$TITLE" --body-file $BASEDIR/body.txt --label "autoupdate"
-                # --repo bernt-matthias/tools-iuc 
-                #  --head autoupdate/$REPO 
                 break
               fi
             fi
