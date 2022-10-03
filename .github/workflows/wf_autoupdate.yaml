@@ -52,6 +52,8 @@ jobs:
     # Runs a set of commands using the runners shell
     - name: Run autoupdate and create or update PRs for changed repositories
       run: |
+        pip install wheel planemo
+        
         # git credentials
         git config --global user.email "m.bernt@ufz.de"
         git config --global user.name "planemo-autoupdate"
@@ -65,24 +67,25 @@ jobs:
 
         # TODO tool-collections (problem is that branch tool-collections/sanmtools/samtools-XYZ can not be crated, if
         # tool-collections/samtools already exists)
-        REPOS=$(echo "${{ inputs.repository-list }}" | grep "^tools/")
+        REPOS=$(echo "${{ inputs.repository-list }}")
         
         for REPO in $REPOS; do
-          # git checkout upstream/master
-          echo "Processing $REPO"
+          REPO_BRANCH="autoupdate/$(echo $REPO | sed 's@/@__@')"
+          echo "Processing $REPO on branch $REPO_BRANCH"
           # checkout branch, create if it doesn't exist
-          if [[ $(gh pr list --limit 10000 | grep autoupdate/$REPO.\s*OPEN) ]]
+          # TODO use gh pr view .. like for PR_NUMBER
+          if [[ $(gh pr list --limit 10000 | grep $REPO_BRANCH.\s*OPEN) ]]
           then
             echo "PR exists, we will checkout the branch and add to it"
-            git checkout --track origin/autoupdate/$REPO
+            git checkout --track origin/$REPO_BRANCH
           else
-            if [[ $(git branch -a --list origin/autoupdate/$REPO) ]]
+            if [[ $(git branch -a --list origin/$REPO_BRANCH) ]]
             then
               echo "Branch exists without an open PR - deleting"
-              git push origin --delete autoupdate/$REPO
+              git push origin --delete $REPO_BRANCH
             fi
             echo "Creating branch and checking out"
-            git checkout -b autoupdate/$REPO master
+            git checkout -b $REPO_BRANCH master
           fi
           echo "Checked out branch $(git branch --show-current)"
           echo "Running autoupdate command..."
@@ -94,17 +97,17 @@ jobs:
           then
             TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
             # first check if a closed PR for the same branch with the same title - if so, we don't continue
-            if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
+            if [[ ! $(gh pr list -s closed --search "head:$REPO_BRANCH ^$TITLE\$ in:title" --limit 1000) ]]
             then
 
               echo "Committing..."
               git commit $REPO -m "$TITLE" --quiet
 
               echo "Push branch to remote..."
-              git push --set-upstream origin autoupdate/$REPO --quiet
+              git push --set-upstream origin $REPO_BRANCH --quiet
 
               # determine PR number (empty if no PR already exists)
-              PR_NUMBER=$(gh pr view autoupdate/$REPO --json number --jq '.[]' || true 2> /dev/null)
+              PR_NUMBER=$(gh pr view $REPO_BRANCH --json number --jq '.[]' || true 2> /dev/null)
               if [[ -n "$PR_NUMBER" ]] # just need to update PR title
               then
                 echo "Need to update title"
