@@ -100,7 +100,7 @@ jobs:
             if [[ ! $(gh pr list -s closed --search "head:$REPO_BRANCH ^$TITLE\$ in:title" --limit 1000) ]]
             then
 
-              echo "Committing..."
+              echo "Committing... git commit $REPO -m "$TITLE" --quiet"
               git commit $REPO -m "$TITLE" --quiet
 
               echo "Push branch to remote..."
