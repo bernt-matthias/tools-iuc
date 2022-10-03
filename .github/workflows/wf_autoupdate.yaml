@@ -49,21 +49,10 @@ jobs:
         path: ~/.planemo
         key: planemo_cache_py_${{ matrix.python-version }}_gxy_${{ inputs.galaxy-head-sha }}
 
-    - name: Planemo autoupdate
-      uses: bernt-matthias/planemo-ci-action@topic/autoupdate
-      id: autoupdate
-      with:
-        mode: autoupdate
-        repository-list: ${{ inputs.repository-list }}
-
     # Runs a set of commands using the runners shell
-    - name: Create or update PRs for changed repositories
+    - name: Run autoupdate and create or update PRs for changed repositories
       run: |
-        
-        echo "Installing planemo..."
-        pip3 install wheel planemo
-
-        # # git credentials
+        # git credentials
         git config --global user.email "m.bernt@ufz.de"
         git config --global user.name "planemo-autoupdate"
         echo ${{ github.token }} > token.txt
@@ -96,14 +85,14 @@ jobs:
             git checkout -b autoupdate/$REPO master
           fi
           echo "Checked out branch $(git branch --show-current)"
+          echo "Running autoupdate command..."
+          planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
+          cat $BASEDIR/autoupdate.log >> autoupdate_report.txt
+          rm -f tool_test_output.*
 
-          if [[ $(git diff $REPO) ]]
+          if [[ $(git diff) ]]
           then
-            OLD_VERSION=$(git diff $REPO | grep "^-.*TOOL_VERSION" | head | sed 's@.*>\(.*\)<.*@\1@')
-            NEW_VERSION=$(git diff $REPO | grep "^-.*TOOL_VERSION" | head | sed 's@.*>\(.*\)<.*@\1@')
-            
-            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --old_version "$OLD_VERSION" --new_version "$NEW_VERSION" --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
-            echo "TITLE $TITLE"
+            TITLE=$(python3 $BASEDIR/autoupdate_pr_text.py --repo $REPO --log $BASEDIR/autoupdate.log --shed $REPO/.shed.yml --out $BASEDIR/body.txt)
             # first check if a closed PR for the same branch with the same title - if so, we don't continue
             if [[ ! $(gh pr list -s closed --search "head:autoupdate/$REPO ^$TITLE\$ in:title" --limit 1000) ]]
             then
@@ -114,7 +103,7 @@ jobs:
               echo "Push branch to remote..."
               git push --set-upstream origin autoupdate/$REPO --quiet
 
-              # determine PR number if a PR already exists
+              # determine PR number (empty if no PR already exists)
               PR_NUMBER=$(gh pr view autoupdate/$REPO --json number --jq '.[]' || true 2> /dev/null)
               if [[ -n "$PR_NUMBER" ]] # just need to update PR title
               then
@@ -130,6 +119,10 @@ jobs:
           # clean up for the next tool
           git checkout -- $REPO
         done
+    - uses: actions/upload-artifact@v2
+      with:
+        name: 'Autoupdate report'
+        path: autoupdate_report.txt
     - name: Create comment
       if: ${{ github.event.client_payload.slash_command.command == 'run-autoupdate' }}
       uses: peter-evans/create-or-update-comment@v1

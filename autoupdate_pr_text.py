@@ -8,13 +8,19 @@ import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--repo', required=True, help='Tool repo')
-parser.add_argument('--old_version', required=True, help='Old version')
-parser.add_argument('--new_version', required=True, help='New version')
+parser.add_argument('--log', required=True, help='Autoupdate log')
 parser.add_argument('--shed', required=True, help='Location of .shed.yml file input.')
 parser.add_argument('--out', required=True, help='Output file.')
 args = parser.parse_args()
 
-update = f"from version {args.old_version} to {args.new_version}"
+with open(args.log) as f:
+    for n in f.readlines():
+        if 'Updating' in n and 'from version' in n:
+            if n.split()[4] != n.split()[6]:
+                update = f"from version {n.split()[4]} to {n.split()[6]}"
+                break
+    else:
+        raise Error
 
 text = []
 text.append(f"Hello! This is an automated update of the following tool: **{args.repo}**. I created this PR because I think the tool's main dependency is out of date, i.e. there is a newer version available through conda.")
