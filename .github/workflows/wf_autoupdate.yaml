@@ -65,11 +65,12 @@ jobs:
         echo "Pulling latest..."
         git fetch --all
 
-        # TODO tool-collections (problem is that branch tool-collections/sanmtools/samtools-XYZ can not be crated, if
-        # tool-collections/samtools already exists)
         REPOS=$(echo "${{ inputs.repository-list }}")
         
         for REPO in $REPOS; do
+          # branch name will be path name with slashes replaced by `__`
+          # because repos like tool-collections/samtools/samtools-XYZ 
+          # can not be crated, if tool-collections/samtools already exists
           REPO_BRANCH="autoupdate/$(echo $REPO | sed 's@/@__@g')"
           echo "Processing $REPO on branch $REPO_BRANCH"
           # checkout branch, create if it doesn't exist
@@ -89,7 +90,7 @@ jobs:
           fi
           echo "Checked out branch $(git branch --show-current)"
           echo "Running autoupdate command..."
-          planemo autoupdate . --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
+          planemo autoupdate --skiplist .autoupdate_skip $REPO > $BASEDIR/autoupdate.log
           cat $BASEDIR/autoupdate.log >> autoupdate_report.txt
           rm -f tool_test_output.*
 
@@ -104,7 +105,7 @@ jobs:
               git commit . -m "$TITLE" --quiet
 
               EQUAL="FALSE"
-              for branch in $(git branch); do
+              for branch in $(git branch | grep "autoupdate/" | grep -v "^\*"); do
                 if [[ ! $(git diff $branch) ]]; then
                   EQUAL="TRUE"
                 fi
