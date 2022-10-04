@@ -70,7 +70,7 @@ jobs:
         REPOS=$(echo "${{ inputs.repository-list }}")
         
         for REPO in $REPOS; do
-          REPO_BRANCH="autoupdate/$(echo $REPO | sed 's@/@__@')"
+          REPO_BRANCH="autoupdate/$(echo $REPO | sed 's@/@__@g')"
           echo "Processing $REPO on branch $REPO_BRANCH"
           # checkout branch, create if it doesn't exist
           # TODO use gh pr view .. like for PR_NUMBER
