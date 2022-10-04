@@ -101,21 +101,31 @@ jobs:
             then
 
               echo "Committing... git commit $REPO -m "$TITLE" --quiet"
-              git commit $REPO -m "$TITLE" --quiet
+              git commit . -m "$TITLE" --quiet
 
-              echo "Push branch to remote..."
-              git push --set-upstream origin $REPO_BRANCH --quiet
-
-              # determine PR number (empty if no PR already exists)
-              PR_NUMBER=$(gh pr view $REPO_BRANCH --json number --jq '.[]' || true 2> /dev/null)
-              if [[ -n "$PR_NUMBER" ]] # just need to update PR title
-              then
-                echo "Need to update title"
-                gh pr edit $PR_NUMBER --title "$TITLE" --add-label
-              else # we need to create a PR
-                echo "Creating a PR..."
-                gh pr create --base master --title "$TITLE" --body-file $BASEDIR/body.txt --label "autoupdate"
-                break
+              EQUAL="FALSE"
+              for branch in $(git branch); do
+                if [[ ! $(git diff $branch) ]]; then
+                  EQUAL="TRUE"
+                fi
+              done
+              if [[ "$EQUAL" == "TRUE" ]]; then
+                echo "Current branch is equal to $branch .. not commiting"
+              else
+                echo "Push branch to remote..."
+                git push --set-upstream origin $REPO_BRANCH --quiet
+  
+                # determine PR number (empty if no PR already exists)
+                PR_NUMBER=$(gh pr view $REPO_BRANCH --json number --jq '.[]' || true 2> /dev/null)
+                if [[ -n "$PR_NUMBER" ]] # just need to update PR title
+                then
+                  echo "Need to update title"
+                  gh pr edit $PR_NUMBER --title "$TITLE" --add-label
+                else # we need to create a PR
+                  echo "Creating a PR..."
+                  gh pr create --base master --title "$TITLE" --body-file $BASEDIR/body.txt --label "autoupdate"
+                  break
+                fi
               fi
             fi
           fi
