@@ -1,4 +1,4 @@
-<tool id="maxbin2" name="MaxBin2" version="@MAXBIN_VERSION@+galaxy3">
+<tool id="maxbin2" name="MaxBin2" version="@MAXBIN_VERSION@+galaxy4">
     <description>clusters metagenomic contigs into bins</description>
     <xrefs>
         <xref type="bio.tools">masigpro</xref>
