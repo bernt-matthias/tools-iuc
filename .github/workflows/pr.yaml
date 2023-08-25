@@ -16,8 +16,8 @@ on:
       - 'docs/**'
       - '*'
 env:
-  GALAXY_FORK: galaxyproject
-  GALAXY_BRANCH: release_23.1
+  GALAXY_FORK: bernt-matthias
+  GALAXY_BRANCH: release_23.1_tmp
   MAX_CHUNKS: 4
   MAX_FILE_SIZE: 1M
 concurrency:
