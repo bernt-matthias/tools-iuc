@@ -315,6 +315,10 @@ jobs:
     - name: Planemo test
       uses: galaxyproject/planemo-ci-action@v1
       id: test
+      env:
+        TMP: /tmp/
+        TEMP: /tmp/
+        TMPDIR: /tmp/
       with:
         mode: test
         repository-list: ${{ needs.setup.outputs.repository-list }}
