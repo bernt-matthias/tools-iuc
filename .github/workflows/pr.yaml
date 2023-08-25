@@ -317,8 +317,8 @@ jobs:
       id: test
       env:
         TMP: /tmp/tmpdir
-        TEMP: /tmp/tmpdir
         TMPDIR: /tmp/tmpdir
+        TEMP: /tmp/tmpdir
       with:
         mode: test
         repository-list: ${{ needs.setup.outputs.repository-list }}
