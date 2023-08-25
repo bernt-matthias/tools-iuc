@@ -316,9 +316,9 @@ jobs:
       uses: galaxyproject/planemo-ci-action@v1
       id: test
       env:
-        TMP: /tmp/
-        TEMP: /tmp/
-        TMPDIR: /tmp/
+        TMP: /tmp/tmpdir
+        TEMP: /tmp/tmpdir
+        TMPDIR: /tmp/tmpdir
       with:
         mode: test
         repository-list: ${{ needs.setup.outputs.repository-list }}
