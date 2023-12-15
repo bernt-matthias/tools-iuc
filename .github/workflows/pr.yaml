@@ -212,6 +212,7 @@ jobs:
       run: echo '${{ needs.setup.outputs.repository-list }}' > repository_list.txt
     - name: lintr
       run: |
+        set -eo pipefail
         echo '${{ needs.setup.outputs.repository-list }}' | xargs -d '\n' .github/styler.R --dry off
         git diff --exit-code | tee rlint_report.txt
     - uses: actions/upload-artifact@v3
