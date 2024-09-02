@@ -15,7 +15,7 @@ out.bed: valid only
 out.bed.unmap: invalid only
 -->
     <command><![CDATA[
-CrossMap.py bed
+CrossMap bed
 '${chain_source.input_chain}'
 '${input}'
 

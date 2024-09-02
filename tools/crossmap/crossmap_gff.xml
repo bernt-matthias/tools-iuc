@@ -7,7 +7,7 @@
     <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command><![CDATA[
-CrossMap.py gff
+CrossMap gff
 '${chain_source.input_chain}'
 '${input}'
 

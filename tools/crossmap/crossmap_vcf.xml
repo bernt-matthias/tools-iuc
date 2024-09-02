@@ -11,7 +11,7 @@
 
 ln -s '${seq_source.input_fasta}' 'genome.fasta' &&
 
-CrossMap.py vcf
+CrossMap vcf
 
 #if $seq_source.index_source_s == "cached"
     ## This is the 2nd dbkey, and the corresponding value has to be looked up
@@ -67,7 +67,7 @@ output
             <output name="output">
                 <assert_contents>
                     <has_text text="##fileformat=VCFv4.2"/>
-                    <has_text_matching expression="##liftOverProgram=&lt;CrossMap,version=[0-9.]+,website=https://sourceforge.net/projects/crossmap&gt;"/>
+                    <has_text_matching expression="##liftOverProgram=CrossMap,version=[0-9.]+,website=https://crossmap.readthedocs.io/en/latest"/>
                     <has_text text="##targetRefGenome="/>
                     <has_text text="#CHROM"/>
                     <has_text_matching expression="2.*?rs11449.*?PASS"/>
