@@ -130,30 +130,23 @@ jobs:
       with:
         allowClosed: true
         failIfNotFound: true
-    - name: Debug
-      run: |
-        echo number: ${{ steps.find-pr.outputs.number }}
-        echo title: ${{ steps.find-pr.outputs.title }}
     - name: Get labels of the PR
       uses: snnaplab/get-labels-action@v1
       with:
         number: ${{ steps.find-pr.outputs.number }}
-    - name: Debug
+    - name: Print PR and label info
       run: |
-        for i in $(seq 0 $(($(echo '${{ env.LABELS }}' | jq length) - 1)))
-        do
-          label=$(echo '${{ env.LABELS }}' | jq -r .[$i])
-          echo $label
-        done
+        echo number: ${{ steps.find-pr.outputs.number }}
+        echo labels: ${{ env.LABELS }}
     - name: Conditionally skip URL/version linter
       run: |
           set -x
 
           to_skip=()
-          if echo "${{ env.LABELS }}" | jq -e --arg s "skip-url-check" 'index($s)' > /dev/null; then
+          if echo '${{ env.LABELS }}' | jq -e --arg s "skip-url-check" 'index($s)' > /dev/null; then
             to_skip+=("tool_urls")
           fi
-          if echo "${{ env.LABELS }}" | jq -e --arg s "skip-version-check" 'index($s)' > /dev/null; then
+          if echo '${{ env.LABELS }}' | jq -e --arg s "skip-version-check" 'index($s)' > /dev/null; then
             to_skip+=("version_bumped")
           fi
 
