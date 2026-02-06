@@ -134,10 +134,6 @@ jobs:
       run: |
         echo number: ${{ steps.find-pr.outputs.number }}
         echo title: ${{ steps.find-pr.outputs.title }}
-        echo body: ${{ steps.find-pr.outputs.body }}
-        echo url: ${{ steps.find-pr.outputs.url }}
-        echo url: ${{ steps.find-pr.outputs.base-ref }}
-        echo url: ${{ steps.find-pr.outputs.base-sha }}
     - name: Get labels of the PR
       uses: snnaplab/get-labels-action@v1
       with:
