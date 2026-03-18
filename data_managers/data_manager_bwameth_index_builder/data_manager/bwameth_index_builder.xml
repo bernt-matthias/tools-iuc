@@ -1,4 +1,4 @@
-<tool id="bwameth_index_builder_data_manager" name="bwa-meth index" tool_type="manage_data" version="1.0.0.2" profile="18.09">
+<tool id="bwameth_index_builder_data_manager" name="bwa-meth index" tool_type="manage_data" version="1.0.0.3" profile="24.2">
     <description>builder</description>
     <macros>
         <token name="@TOOL_VERSION@">0.2.2</token>
