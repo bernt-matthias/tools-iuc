@@ -38,7 +38,14 @@ python '$__tool_directory__/bwameth_index_builder.py' --output '${out_file}'
     <tests>
         <test>
             <param name="all_fasta_source" value="phiX174"/>
-            <output name="out_file" value="bwameth_data_manager.json" compare="re_match"/>
+            <output name="out_file" value="bwameth_data_manager.json" compare="re_match">
+                <assert_contents>
+                    <has_json_property_with_text property="dbkey" text="phiX174"/>
+                    <has_json_property_with_text property="name" text="phiX 174"/>
+                    <has_json_property_with_text property="value" text="phiX174"/>
+                    <!-- {"data_tables": {"bwameth_indexes": \[\{"dbkey": "", "": "", "path": ".*_files\/phiX174\.fasta", "": ""}]} -->
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help><![CDATA[
