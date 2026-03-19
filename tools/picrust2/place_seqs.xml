@@ -113,10 +113,10 @@ place_seqs.py
             <param name="intermediate_check" value="false"/>
             <conditional name="ref_dir">
                 <param name="selector" value="custom"/>
-                <param name="custom_fna" value="img_centroid_16S_aligned_head30.fna.gz"/>
-                <param name="custom_hmm" value="img_centroid_16S_aligned_head30.hmm"/>
-                <param name="custom_tre" value="img_centroid_16S_aligned_head30.tre"/>
-                <param name="custom_model" value="img_centroid_16S_aligned_head30.model"/>
+                <param name="ref_dir_fna" value="img_centroid_16S_aligned_head30.fna.gz"/>
+                <param name="ref_dir_hmm" value="img_centroid_16S_aligned_head30.hmm"/>
+                <param name="ref_dir_tre" value="img_centroid_16S_aligned_head30.tre"/>
+                <param name="ref_dir_model" value="img_centroid_16S_aligned_head30.model"/>
             </conditional>
             <output name="out_tree" ftype="newick">
                 <assert_contents>
