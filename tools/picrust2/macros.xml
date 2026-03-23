@@ -82,14 +82,14 @@ Read more about the tool: https://github.com/picrust/picrust2/wiki
         REF_DIR_BASE=\$PROJECT_DIR"/default_files/" &&
         #if $getVarCond("place_seqs_section", "ref_dir.selector") == "custom"
             mkdir -p custom/ &&
-            ln -s '$getVarCond("place_seqs_section", "ref_dir.refdir_fna")' custom/custom.fna &&
-            ln -s '$getVarCond("place_seqs_section", "ref_dir.refdir_hmm")' custom/custom.hmm &&
+            ln -s '$getVarCond("place_seqs_section", "ref_dir.ref_dir_fna")' custom/custom.fna &&
+            ln -s '$getVarCond("place_seqs_section", "ref_dir.ref_dir_hmm")' custom/custom.hmm &&
             #if $getVarCond("place_seqs_section", "placement_tool") == "epa-ng"
-                ln -s '$getVarCond("place_seqs_section", "ref_dir.refdir_model")' custom/custom.model &&
+                ln -s '$getVarCond("place_seqs_section", "ref_dir.ref_dir_model")' custom/custom.model &&
             #elif $getVarCond("place_seqs_section", "placement_tool")
-                ln -s '$getVarCond("place_seqs_section", "ref_dir.refdir_model")' custom/custom.raxml_info &&
+                ln -s '$getVarCond("place_seqs_section", "ref_dir.ref_dir_model")' custom/custom.raxml_info &&
             #end if
-            ln -s '$getVarCond("place_seqs_section", "ref_dir.custom_tre")' custom/custom.tre &&
+            ln -s '$getVarCond("place_seqs_section", "ref_dir.ref_dir_tre")' custom/custom.tre &&
         #elif $getVarCond("place_seqs_section", "ref_dir.selector") == "custom_references"
             mkdir -p ref_dir1/ &&
             ln -s '$getVarCond("place_seqs_section", "ref_dir1.custom_fna")' custom/custom.fna &&
