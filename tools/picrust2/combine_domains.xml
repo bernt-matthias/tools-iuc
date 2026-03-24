@@ -23,8 +23,8 @@
              test input generated during a run of the full workflow: picrust2_pipeline.py -s study_seqs_test.fasta -i workflow_seq_abun.biom -o picrust2_out_pipeline_split -p 1
              and the output file split in half -->
         <test>
-            <param name="table_dom1" value="test/picrust2_out_pipeline_split/bac_EC_predicted.tsv"/>
-            <param name="table_dom2" value="test/picrust2_out_pipeline_split/bac_EC_predicted_part2.tsv"/>
+            <param name="table_dom1" value="picrust2_out_pipeline_split/bac_EC_predicted.tsv"/>
+            <param name="table_dom2" value="picrust2_out_pipeline_split/bac_EC_predicted_part2.tsv"/>
             <output name="output" value="combine_domains.tsv"/>
         </test>
     </tests>
