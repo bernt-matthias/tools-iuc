@@ -5,8 +5,7 @@
     <version_command></version_command>
     <command detect_errors="exit_code"><![CDATA[
         mkdir '$output_file.extra_files_path'/ &&
-        cd '$output_file.extra_files_path' &&
-        wget https://omabrowser.org/${name}.h5 &&
+        curl https://omabrowser.org/${name}.h5 -o '$output_file.extra_files_path/${name}.h5' &&
         cp '$dmjson' '$output_file'
     ]]></command>
     <configfiles>
