@@ -19,7 +19,7 @@
     </outputs>
     <tests>
         <test>
-            <output name="report" ftype="txt" file="output_list.txt" compare="diff"/>
+            <output name="report" ftype="txt" file="output_list.txt" compare="diff" sort="true"/>
         </test>
     </tests>
     <help><![CDATA[
