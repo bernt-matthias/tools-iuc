@@ -1,9 +1,9 @@
 <macros>
-    <token name="@TOOL_VERSION@">0.5.5</token>
-    <token name="@PIPELINE@">                                                                                
+    <token name="@TOOL_VERSION@">0.5.6</token>
+    <token name="@PIPELINE@">                                                                                 
 **Trycycler pipeline**                                                                                  
                                                                                                         
-    ::                                                                                                  
+    ::                                                                                                 
                                                                                                         
         Trycycler subsample: make maximally-independent read subsets of an appropriate depth.           
                 ⬇                                                                                       
@@ -22,7 +22,7 @@
         </xrefs>
     </xml>
     <xml name="edam_ontology">
-        <edam_topics>                                                                                       
+        <edam_topics>
             <edam_topic>topic_0196</edam_topic>
         </edam_topics>
         <edam_operations>
@@ -36,15 +36,15 @@
     </xml>
     <xml name="citations">
         <citations>
-            <citation type="bibtex">                                                                   
-                @misc{githubTrycycler,                                                                   
-                author = {Ryan, Wick},                                                    
-                year = {2020},                                                                 
-                title = {Trycycler},                                                        
+            <citation type="bibtex">
+                @misc{githubTrycycler,
+                author = {Ryan, Wick},
+                year = {2020},
+                title = {Trycycler},
                 publisher = {GitHub},
-                journal = {GitHub repository},                                               
-                url = {https://github.com/rrwick/Trycycler},                        
-                }                                                                    
+                journal = {GitHub repository},
+                url = {https://github.com/rrwick/Trycycler},
+                }
             </citation>
         </citations>
     </xml>
