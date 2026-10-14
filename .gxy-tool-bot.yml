@@ -1,8 +1,9 @@
 api:
-  base_url: https://api.helmholtz-blablador.fz-juelich.de/v1   # or https://api.openai.com/v1
-  model: alias-code                       # or gpt-4o, etc.
+  base_url: https://chat-ai.academiccloud.de/v1
+  # https://api.helmholtz-blablador.fz-juelich.de/v1   # or https://api.openai.com/v1
+  model: qwen3-coder-30b-a3b-instruct             # or gpt-4o, etc.
   fallback_models:                          # optional; tried in order if primary fails
-    - alias-fast
+    - glm-4.7
   max_tool_iterations: 25
   # Optional: scale validation retry rounds by the number of tool XMLs in the plan.
   # The generator gets max_validation_retries + validation_retries_per_extra_tool_xml * (N - 1)
