@@ -1,4 +1,4 @@
-<tool id="semibin_concatenate_fasta" name="SemiBin2 concatenate_fasta" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+<tool id="concatenate_fasta" name="SemiBin2 concatenate_fasta" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
     <description>Concatenate FASTA files for multi-sample binning</description>
     <macros>
         <import>macros.xml</import>
