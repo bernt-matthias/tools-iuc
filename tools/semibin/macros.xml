@@ -1,7 +1,6 @@
-<?xml version="1.0"?>
 <macros>
-    <token name="@TOOL_VERSION@">2.1.0</token>
-    <token name="@VERSION_SUFFIX@">1</token>
+    <token name="@TOOL_VERSION@">2.5.0</token>
+    <token name="@VERSION_SUFFIX@">0</token>
     <token name="@PROFILE@">21.01</token>
     <xml name="biotools">
         <xrefs>
@@ -177,7 +176,7 @@ ln -s '$e' '${identifier}.bam' &&
     <xml name="cached_db">
         <param name="cached_db" label="Cached databases" type="select">
             <options from_data_table="gtdb">
-                <validator message="No GTDB database is available" type="no_options" />
+                <validator message="No GTDB database is available" type="no_options"/>
             </options>
         </param>
     </xml>
@@ -319,7 +318,7 @@ ln -s '$e' '${identifier}.bam' &&
             <filter>input_type_select['mode']['select']=="single" or input_type_select['mode']['select']=="co"</filter>
         </data>
     </xml>
-    <xml name="data_output_multi"> 
+    <xml name="data_output_multi">
         <collection name="multi_data" type="list" label="${tool.name} on ${on_string}: Training data per sample">
             <filter>input_type_select['mode']['select']=="multi"</filter>
             <discover_datasets pattern="(?P&lt;designation&gt;.*)\/data.csv" format="csv" directory="output/samples/" recurse="true" match_relative_path="true"/>
@@ -341,12 +340,12 @@ ln -s '$e' '${identifier}.bam' &&
         <collection name="co_cov" type="list" label="${tool.name} on ${on_string}: Coverage (co_cov)">
             <filter>input_type_select['mode']['select']=="co" and extra_output and "coverage" in extra_output</filter>
             <filter>input_type_select['input_type']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov\.csv" format="csv" directory="output/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov\.csv" format="csv" directory="output/"/>
         </collection>
         <collection name="co_split_cov" type="list" label="${tool.name} on ${on_string}: Coverage (split data) per sample">
             <filter>input_type_select['mode']['select']=="co" and extra_output and "coverage" in extra_output</filter>
             <filter>input_type_select['input_type']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov\.csv" format="csv" directory="output/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov\.csv" format="csv" directory="output/"/>
         </collection>
         <data name="cov_txt" label="${tool.name} on ${on_string}: Coverage (split data) per sample (aemb)" from_work_dir="output/cov_split.csv" format="csv">
             <filter>input_type_select['mode']['select']=="single" or input_type_select['mode']['select']=="co" and extra_output and "coverage" in extra_output</filter>
@@ -373,46 +372,45 @@ ln -s '$e' '${identifier}.bam' &&
         <collection name="multi_split_cov" type="list" label="${tool.name} on ${on_string}: Coverage (split data) per sample (multi_split_cov)">
             <filter>input_type_select['mode']['select']=="multi" and extra_output and "coverage" in extra_output</filter>
             <filter>input_type_select['input_type']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/"/>
         </collection>
         <collection name="multi_split_cov_sample" type="list" label="${tool.name} on ${on_string}: Coverage (split data) per sample (multi_split_cov_sample)">
             <filter>input_type_select['mode']['select']=="multi" and extra_output and "coverage" in extra_output</filter>
             <filter>input_type_select['input_type']=="bam"</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*)\/data_split_cov.csv" format="csv" directory="output/samples/" match_relative_path="true" recurse="true"/>
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/"/>
         </collection>
         <collection name="multi_contigs" type="list" label="${tool.name} on ${on_string}: Contigs">
             <filter>input_type_select['mode']['select']=="multi" and extra_output and "contigs" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/samples/" />
+            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/samples/"/>
         </collection>
     </xml>
     <xml name="generate_sequence_features_extra_outputs_main">
-    <!-- Single -->
+        <!-- Single -->
         <data name="single_cov" format="csv" from_work_dir="output/*_data_cov.csv" label="${tool.name} on ${on_string}: Coverage">
             <filter>mode['select']=="single" and extra_output and "coverage" in extra_output</filter>
         </data>
         <data name="single_split_cov" format="csv" from_work_dir="output/*_data_split_cov.csv" label="${tool.name} on ${on_string}: Coverage (split data)">
             <filter>mode['select']=="single" and extra_output and "coverage" in extra_output</filter>
         </data>
-    <!-- Bam co aligned -->
+        <!-- Bam co aligned -->
         <collection name="co_cov_bam" type="list" label="${tool.name} on ${on_string}: Coverage (co_cov)">
             <filter>mode['select']=="co" and extra_output and "coverage" in extra_output</filter>
             <filter>mode['align_select']</filter>
             <filter>mode['align_select']['align_select']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov\.csv" format="csv" directory="output/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov\.csv" format="csv" directory="output/"/>
         </collection>
         <collection name="co_split_cov_bam" type="list" label="${tool.name} on ${on_string}: Coverage (split data) per sample">
             <filter>mode['select']=="co" and extra_output and "coverage" in extra_output</filter>
             <filter>mode['align_select']</filter>
             <filter>mode['align_select']['align_select']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov\.csv" format="csv" directory="output/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov\.csv" format="csv" directory="output/"/>
         </collection>
-
-    <!-- Bam Multi aligned -->
+        <!-- Bam Multi aligned -->
         <collection name="multi_cov_bam" type="list" label="${tool.name} on ${on_string}: Coverage (multi_cov)">
             <filter>mode['select']=="multi" and extra_output and "coverage" in extra_output</filter>
             <filter>mode['align_select']</filter>
             <filter>mode['align_select']['align_select']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov.csv" format="csv" directory="output/samples/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_cov.csv" format="csv" directory="output/samples/"/>
         </collection>
         <collection name="multi_cov_sample_bam" type="list" label="${tool.name} on ${on_string}: Coverage per sample">
             <filter>mode['select']=="multi" and extra_output and "coverage" in extra_output</filter>
@@ -424,17 +422,17 @@ ln -s '$e' '${identifier}.bam' &&
             <filter>mode['select']=="multi" and extra_output and "coverage" in extra_output</filter>
             <filter>mode['align_select']</filter>
             <filter>mode['align_select']['align_select']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/"/>
         </collection>
         <collection name="multi_split_cov_sample_bam" type="list" label="${tool.name} on ${on_string}: Coverage (split data) per sample (multi_split_cov_sample)">
             <filter>mode['select']=="multi" and extra_output and "coverage" in extra_output</filter>
             <filter>mode['align_select']</filter>
             <filter>mode['align_select']['align_select']=="bam"</filter>
-            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/" />
+            <discover_datasets pattern=".*\.bam_(?P&lt;designation&gt;.*)_data_split_cov.csv" format="csv" directory="output/samples/"/>
         </collection>
         <collection name="multi_contigs" type="list" label="${tool.name} on ${on_string}: Contigs">
             <filter>mode['select']=="multi" and extra_output and "contigs" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/samples/" />
+            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/samples/"/>
         </collection>
         <!-- Txt co aligned -->
         <data name="co_split_cov_txt" label="${tool.name} on ${on_string}: Coverage (split data) per sample (aemb)" from_work_dir="output/cov_split.csv" format="csv">
@@ -462,10 +460,10 @@ ln -s '$e' '${identifier}.bam' &&
         </collection>
     </xml>
     <xml name="train_output">
-        <data name="model" format="h5" from_work_dir="output/model.h5" label="${tool.name} on ${on_string}: Semi-supervised deep learning model" />
+        <data name="model" format="h5" from_work_dir="output/model.h5" label="${tool.name} on ${on_string}: Semi-supervised deep learning model"/>
     </xml>
     <xml name="cannot_link_output">
-        <data name="cannot" format="txt" from_work_dir="output/cannot/cannot.txt" label="${tool.name} on ${on_string}: Cannot-link constraints" />
+        <data name="cannot" format="txt" from_work_dir="output/cannot/cannot.txt" label="${tool.name} on ${on_string}: Cannot-link constraints"/>
     </xml>
     <token name="@HELP_HEADER@"><![CDATA[
 

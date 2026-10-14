@@ -8,7 +8,7 @@
     <expand macro="biotools"/>
     <expand macro="requirements"/>
     <expand macro="version"/>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
 #import re
 #for $e in $input_fasta
     #set $identifier = re.sub('[^\s\w\-]', '_', str($e.element_identifier))
@@ -32,35 +32,36 @@ SemiBin2 concatenate_fasta
         <expand macro="concat_min_len"/>
     </inputs>
     <outputs>
-        <data name="fasta" format="fasta" from_work_dir="output/concatenated.fa" />
+        <data name="output" format="fasta" from_work_dir="output/concatenated.fa" label="${tool.name} on ${on_string}: Concatenated FASTA file"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_fasta" ftype="fasta" value="input_single.fasta,input_single_2.fasta,input_single_3.fasta"/>
+            <param name="input_fasta" ftype="fasta" value="S1.fasta,S2.fasta,S3.fasta"/>
             <param name="separator" value=":"/>
             <param name="min_len" value="0"/>
-            <output name="fasta" ftype="fasta">
+            <output name="output" ftype="fasta">
                 <assert_contents>
-                    <has_text text=">input_single_fasta:g1k_0"/>
-                    <has_text text=">input_single_3_fasta:g4k_7"/>
-                    <has_text text=">input_single_2_fasta:g1k_0"/>
+                    <has_text text="&gt;S1:g1k_0"/>
+                    <has_text text="&gt;S2:g1k_0"/>
+                    <has_text text="&gt;S3:g1k_0"/>
                 </assert_contents>
             </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 @HELP_HEADER@
 
-Inputs
-======
+This tool concatenates multiple FASTA files into a single file for multi-sample binning.
 
-@HELP_INPUT_FASTA@
+## Inputs
 
-Outputs
-=======
+- Contig sequences (multiple FASTA files)
+- Separator (default: `:`)
+- Minimal length for contigs to be kept (default: 0)
 
-- One fasta with all contigs
+## Outputs
 
+- Concatenated FASTA file with contig headers prefixed by sample name
     ]]></help>
     <expand macro="citations"/>
 </tool>
