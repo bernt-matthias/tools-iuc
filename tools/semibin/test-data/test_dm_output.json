@@ -1,0 +1,16 @@
+{
+  "semibin_models": [
+    {"name": "human_gut", "value": "human_gut", "path": "semibin_models/human_gut"},
+    {"name": "dog_gut", "value": "dog_gut", "path": "semibin_models/dog_gut"},
+    {"name": "ocean", "value": "ocean", "path": "semibin_models/ocean"},
+    {"name": "soil", "value": "soil", "path": "semibin_models/soil"},
+    {"name": "cat_gut", "value": "cat_gut", "path": "semibin_models/cat_gut"},
+    {"name": "human_oral", "value": "human_oral", "path": "semibin_models/human_oral"},
+    {"name": "mouse_gut", "value": "mouse_gut", "path": "semibin_models/mouse_gut"},
+    {"name": "pig_gut", "value": "pig_gut", "path": "semibin_models/pig_gut"},
+    {"name": "built_environment", "value": "built_environment", "path": "semibin_models/built_environment"},
+    {"name": "wastewater", "value": "wastewater", "path": "semibin_models/wastewater"},
+    {"name": "chicken_caecum", "value": "chicken_caecum", "path": "semibin_models/chicken_caecum"},
+    {"name": "global", "value": "global", "path": "semibin_models/global"}
+  ]
+}

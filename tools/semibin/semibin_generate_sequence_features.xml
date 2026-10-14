@@ -1,0 +1,85 @@
+<tool id="semibin_generate_sequence_features" name="SemiBin2 generate_sequence_features" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Generate sequence features for SemiBin2</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 generate_sequence_features_single \
+    --input-fasta '$input_fasta' \
+    --output '$output_dir' \
+#if $input_bam:
+    --input-bam '$input_bam'
+#end if
+#if $input_abundance:
+    --input-abundance '$input_abundance'
+#end if
+#if $prodigal_output_faa:
+    --prodigal-output-faa '$prodigal_output_faa'
+#end if
+#if $prodigal_output_gff:
+    --prodigal-output-gff '$prodigal_output_gff'
+#end if
+#if $allow_missing_mmseqs2:
+    --allow-missing-mmseqs2
+#end if
+#if $verbose:
+    --verbose
+#end if
+#if $quiet:
+    --quiet
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Input FASTA file (contigs)"/>
+        <param name="input_bam" type="data" format="bam" optional="true" label="Input BAM file (reads mapped to contigs)"/>
+        <param name="input_abundance" type="data" format="tabular" optional="true" label="Input abundance file (from strobealign-aemb)"/>
+        <param name="prodigal_output_faa" type="data" format="fasta" optional="true" label="Prodigal output FAA file" help="DEPRECATED – no longer used"/>
+        <param name="prodigal_output_gff" type="data" format="gff3" optional="true" label="Prodigal output GFF file"/>
+        <param name="allow_missing_mmseqs2" type="boolean" truevalue="--allow-missing-mmseqs2" falsevalue="" checked="false" label="Allow missing mmseqs2" help="DEPRECATED – option is a no-op" visible="false"/>
+        <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose output"/>
+        <param name="quiet" type="boolean" truevalue="--quiet" falsevalue="" checked="false" label="Quiet output"/>
+    </inputs>
+    <outputs>
+        <data name="output_dir" format="directory" label="SemiBin2 sequence features output directory"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test_contigs.fasta"/>
+            <output name="output_dir" ftype="directory" count="&gt;0"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Generate sequence features (k-mer frequency and abundance) for SemiBin2 binning.
+
+**Changes in v2.5.0**
+
+- Deprecated `--prodigal-output-faa` (no longer used)
+- Deprecated `--allow-missing-mmseqs2` (no-op)
+
+**Usage**
+
+Generate features with BAM files:
+
+```bash
+SemiBin2 generate_sequence_features_single -i contigs.fasta -b reads.bam -o output
+```
+
+Generate features with abundance files:
+
+```bash
+SemiBin2 generate_sequence_features_single -i contigs.fasta -a abundance.txt -o output
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

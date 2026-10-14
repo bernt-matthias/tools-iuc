@@ -1,0 +1,66 @@
+<tool id="data_manager_semibin" name="SemiBin2 data manager" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Data manager for SemiBin2 pretrained models</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+#python
+import os
+import json
+
+output_dir = '$output_dir'
+os.makedirs(output_dir, exist_ok=True)
+
+# Create a simple data table file
+data_table = {
+    'semibin_models': [
+        {'name': 'human_gut', 'value': 'human_gut', 'path': os.path.join(output_dir, 'human_gut')},
+        {'name': 'dog_gut', 'value': 'dog_gut', 'path': os.path.join(output_dir, 'dog_gut')},
+        {'name': 'ocean', 'value': 'ocean', 'path': os.path.join(output_dir, 'ocean')},
+        {'name': 'soil', 'value': 'soil', 'path': os.path.join(output_dir, 'soil')},
+        {'name': 'cat_gut', 'value': 'cat_gut', 'path': os.path.join(output_dir, 'cat_gut')},
+        {'name': 'human_oral', 'value': 'human_oral', 'path': os.path.join(output_dir, 'human_oral')},
+        {'name': 'mouse_gut', 'value': 'mouse_gut', 'path': os.path.join(output_dir, 'mouse_gut')},
+        {'name': 'pig_gut', 'value': 'pig_gut', 'path': os.path.join(output_dir, 'pig_gut')},
+        {'name': 'built_environment', 'value': 'built_environment', 'path': os.path.join(output_dir, 'built_environment')},
+        {'name': 'wastewater', 'value': 'wastewater', 'path': os.path.join(output_dir, 'wastewater')},
+        {'name': 'chicken_caecum', 'value': 'chicken_caecum', 'path': os.path.join(output_dir, 'chicken_caecum')},
+        {'name': 'global', 'value': 'global', 'path': os.path.join(output_dir, 'global')},
+    ]
+}
+
+with open('$output_json', 'w') as f:
+    json.dump(data_table, f, indent=2)
+#end python
+    ]]></command>
+    <inputs>
+        <param name="output_dir" type="text" value="semibin_models" label="Output directory"/>
+    </inputs>
+    <outputs>
+        <data name="output_json" format="json" label="SemiBin2 data manager output"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <output name="output_json" ftype="json" file="test_dm_output.json"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Data manager for SemiBin2 pretrained models. This tool creates a data table for SemiBin2 environment models.
+
+**Changes in v2.5.0**
+
+- Updated to SemiBin2 version 2.5.0
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

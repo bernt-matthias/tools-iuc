@@ -1,0 +1,45 @@
+<tool id="semibin_citation" name="SemiBin2 citation" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Display SemiBin2 citation information</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 citation
+    ]]></command>
+    <inputs/>
+    <outputs>
+        <data name="output_citation" format="txt" label="SemiBin2 citation"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <output name="output_citation" ftype="txt" file="test_citation.txt"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Display SemiBin2 citation information.
+
+**Changes in v2.5.0**
+
+No CLI changes.
+
+**Usage**
+
+Display citation:
+
+```bash
+SemiBin2 citation
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

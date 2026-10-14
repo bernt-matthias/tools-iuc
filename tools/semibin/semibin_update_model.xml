@@ -1,0 +1,50 @@
+<tool id="semibin_update_model" name="SemiBin2 update_model" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Update old SemiBin2 model format</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 update_model \
+    --input-model '$input_model' \
+    --output '$output_model'
+    ]]></command>
+    <inputs>
+        <param name="input_model" type="data" format="zip" label="Input model file (old format)"/>
+    </inputs>
+    <outputs>
+        <data name="output_model" format="zip" label="Updated model file"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_model" value="test_model.zip"/>
+            <output name="output_model" ftype="zip" file="test_model.zip"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Update old SemiBin2 model format to the current format.
+
+**Changes in v2.5.0**
+
+No CLI changes.
+
+**Usage**
+
+Update a model:
+
+```bash
+SemiBin2 update_model -i old_model.zip -o new_model.zip
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

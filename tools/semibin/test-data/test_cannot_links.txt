@@ -1,0 +1,5 @@
+# Test data for cannot links
+# Format: contig1 contig2
+contig1 contig2
+contig1 contig3
+contig2 contig3

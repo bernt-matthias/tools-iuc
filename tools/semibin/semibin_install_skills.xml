@@ -1,0 +1,56 @@
+<tool id="semibin_install_skills" name="SemiBin2 install_skills" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Install SemiBin2 agent skills</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 install-skills \
+#if $user:
+    --user
+#end if
+    ]]></command>
+    <inputs>
+        <param name="user" type="boolean" truevalue="--user" falsevalue="" checked="false" label="Install for all users" help="Install skills globally to $HOME/.claude/skills instead of ./claude/skills"/>
+    </inputs>
+    <outputs>
+        <data name="output_dir" format="directory" label="SemiBin2 skills installation directory"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="user" value="False"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Install SemiBin2 agent skills for use with AI coding assistants like Claude.
+
+**Changes in v2.5.0**
+
+New sub-command added in SemiBin2 v2.4.0.
+
+**Usage**
+
+Install skills locally:
+
+```bash
+SemiBin2 install-skills
+```
+
+Install skills globally:
+
+```bash
+SemiBin2 install-skills --user
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

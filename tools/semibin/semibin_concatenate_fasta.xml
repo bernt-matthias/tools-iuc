@@ -1,0 +1,75 @@
+<tool id="semibin_concatenate_fasta" name="SemiBin2 concatenate_fasta" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Concatenate FASTA files for multi-sample binning</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 concatenate_fasta \
+    --input-fasta '$input_fasta' \
+    --output '$output_fasta' \
+#if $separator:
+    --separator '$separator'
+#end if
+#if $keep_full_header:
+    --keep-full-header
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Input FASTA files" multiple="true"/>
+        <param name="separator" type="text" value=":" label="Sample separator" help="Separator used to split sample names from contig names"/>
+        <param name="keep_full_header" type="boolean" truevalue="--keep-full-header" falsevalue="" checked="false" label="Keep full header" help="Preserve full FASTA header (including description) instead of truncating after contig ID"/>
+    </inputs>
+    <outputs>
+        <data name="output_fasta" format="fasta" label="SemiBin2 concatenated FASTA file"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test_contigs.fasta"/>
+            <output name="output_fasta" ftype="fasta" file="test_concatenated.fasta"/>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test_contigs.fasta"/>
+            <param name="keep_full_header" value="True"/>
+            <output name="output_fasta" ftype="fasta" file="test_concatenated_keep_header.fasta"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Concatenate multiple FASTA files for multi-sample binning. Sample names are prepended to contig IDs using the specified separator.
+
+**Changes in v2.5.0**
+
+- Added `--keep-full-header` flag to preserve full FASTA headers
+
+**Usage**
+
+Concatenate FASTA files:
+
+```bash
+SemiBin2 concatenate_fasta -i contig1.fa contig2.fa -o combined.fa
+```
+
+With custom separator:
+
+```bash
+SemiBin2 concatenate_fasta -i contig1.fa contig2.fa -o combined.fa -s "_"
+```
+
+Preserve full headers:
+
+```bash
+SemiBin2 concatenate_fasta -i contig1.fa contig2.fa -o combined.fa --keep-full-header
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

@@ -1,0 +1,56 @@
+<tool id="semibin_check_install" name="SemiBin2 check_install" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Check SemiBin2 installation</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 check_install \
+#if $verbose:
+    --verbose
+#end if
+    ]]></command>
+    <inputs>
+        <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose output"/>
+    </inputs>
+    <outputs>
+        <data name="output_log" format="txt" label="SemiBin2 check_install log"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="verbose" value="False"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Check SemiBin2 installation and dependencies.
+
+**Changes in v2.5.0**
+
+- Now also reports missing `samtools` (soft check)
+
+**Usage**
+
+Check installation:
+
+```bash
+SemiBin2 check_install
+```
+
+Verbose mode:
+
+```bash
+SemiBin2 check_install --verbose
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

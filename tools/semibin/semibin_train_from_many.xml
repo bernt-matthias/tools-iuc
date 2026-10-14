@@ -1,0 +1,103 @@
+<tool id="semibin_train_from_many" name="SemiBin2 train_from_many" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Train a SemiBin2 model from multiple samples</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 train_from_many \
+    --input-fasta '$input_fasta' \
+    --output '$output_dir' \
+#if $input_bam:
+    --input-bam '$input_bam'
+#end if
+#if $input_abundance:
+    --input-abundance '$input_abundance'
+#end if
+#if $separator:
+    --separator '$separator'
+#end if
+#if $sequencing_type and str($sequencing_type) != 'None':
+    --sequencing-type '$sequencing_type'
+#end if
+#if $prodigal_output_faa:
+    --prodigal-output-faa '$prodigal_output_faa'
+#end if
+#if $allow_missing_mmseqs2:
+    --allow-missing-mmseqs2
+#end if
+#if $epochs:
+    --epochs '$epochs'
+#end if
+#if $random_seed:
+    --random-seed '$random_seed'
+#end if
+#if $verbose:
+    --verbose
+#end if
+#if $quiet:
+    --quiet
+#end if
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Input FASTA file (concatenated contigs)"/>
+        <param name="input_bam" type="data" format="bam" optional="true" label="Input BAM files" multiple="true"/>
+        <param name="input_abundance" type="data" format="tabular" optional="true" label="Input abundance files" multiple="true"/>
+        <param name="separator" type="text" value=":" label="Sample separator" help="Separator used to split sample names from contig names"/>
+        <param name="sequencing_type" type="select" label="Sequencing type">
+            <option value="short_read">short_read</option>
+            <option value="long_read">long_read</option>
+            <option value="hybrid">hybrid (synonym for long_read)</option>
+        </param>
+        <param name="prodigal_output_faa" type="data" format="fasta" optional="true" label="Prodigal output FAA file" help="DEPRECATED – no longer used"/>
+        <param name="allow_missing_mmseqs2" type="boolean" truevalue="--allow-missing-mmseqs2" falsevalue="" checked="false" label="Allow missing mmseqs2" help="DEPRECATED – option is a no-op" visible="false"/>
+        <param name="epochs" type="integer" value="150" label="Number of epochs" help="Number of epochs for training"/>
+        <param name="random_seed" type="integer" value="42" label="Random seed" help="Random seed for reproducibility"/>
+        <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose output"/>
+        <param name="quiet" type="boolean" truevalue="--quiet" falsevalue="" checked="false" label="Quiet output"/>
+    </inputs>
+    <outputs>
+        <data name="output_dir" format="directory" label="SemiBin2 multi-sample training output directory"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test_concatenated.fasta"/>
+            <param name="sequencing_type" value="short_read"/>
+            <output name="output_dir" ftype="directory" count="&gt;0"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Train a SemiBin2 model from multiple samples simultaneously.
+
+**Changes in v2.5.0**
+
+- Added `hybrid` as a synonym for `long_read` in `--sequencing-type`
+- Deprecated `--prodigal-output-faa` (no longer used)
+- Deprecated `--allow-missing-mmseqs2` (no-op)
+
+**Usage**
+
+Train from multiple samples:
+
+```bash
+SemiBin2 train_from_many -i concatenated.fa -b *.bam -o output
+```
+
+For long-read data:
+
+```bash
+SemiBin2 train_from_many -i concatenated.fa -b *.bam -o output --sequencing-type long_read
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

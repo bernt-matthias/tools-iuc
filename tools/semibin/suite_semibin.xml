@@ -1,0 +1,49 @@
+<tool id="suite_semibin" name="SemiBin2 suite" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>SemiBin2 metagenomic binning suite</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+echo "SemiBin2 suite version @TOOL_VERSION@"
+    ]]></command>
+    <inputs>
+        <param name="version_check" type="boolean" truevalue="--version" falsevalue="" checked="true" label="Check version"/>
+    </inputs>
+    <outputs/>
+    <tests>
+        <test expect_num_outputs="0">
+            <param name="version_check" value="True"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+This suite provides a collection of SemiBin2 tools for metagenomic binning.
+
+**Tools included**
+
+- **SemiBin2**: Main tool for single-sample binning
+- **SemiBin2 train**: Train a new SemiBin2 model
+- **SemiBin2 bin**: Bin contigs using a trained model
+- **SemiBin2 generate_sequence_features**: Generate sequence features
+- **SemiBin2 generate_cannot_links**: Generate cannot links
+- **SemiBin2 concatenate_fasta**: Concatenate FASTA files for multi-sample binning
+
+**Changes in v2.5.0**
+
+- Updated to SemiBin2 version 2.5.0
+- Added `hybrid` as a synonym for `long_read` in `--sequencing-type`
+- Deprecated `--prodigal-output-faa` (no longer used)
+- Deprecated `--allow-missing-mmseqs2` (no-op)
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

@@ -1,0 +1,17 @@
+---
+description: SemiBin2 metagenomic binning suite
+categories:
+- Metagenomics
+owner: bernt-matthias
+homepage_url: https://github.com/BigDataBiology/SemiBin
+long_description: |
+  SemiBin2 is a metagenomic binning tool that uses semi-supervised deep learning to generate high-quality metagenome-assembled genomes (MAGs) from short- and long-read sequencing data.
+remote_repository_url: https://github.com/bernt-matthias/tools-iuc/tree/main/tools/semibin
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for SemiBin2 application {{ tool_name }}."
+suite:
+  name: "suite_semibin"
+  description: "A suite of Galaxy tools designed to work with SemiBin2 version 2.5.0."
+  type: repository_suite_definition

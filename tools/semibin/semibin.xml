@@ -1,773 +1,152 @@
-<tool id="semibin" name="SemiBin" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
-    <description>
-        for Semi-supervised Metagenomic Binning
-    </description>
+<tool id="semibin" name="SemiBin2" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="24.1">
+    <description>Metagenomic binning with semi-supervised deep learning</description>
     <macros>
         <import>macros.xml</import>
     </macros>
-    <expand macro="biotools"/>
+    <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version"/>
-    <command detect_errors="exit_code"><![CDATA[
-#import re
-#if $mode.select != "single":
-    #if $mode.align_select.align_select == "bam":
-        @BAM_FILES@
-    #else:
-        @STROBEALIGN_FILES@
-    #end if
-#else:
-    @BAM_FILES@
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+SemiBin2 single_easy_bin \
+    --input-fasta '$input_fasta' \
+    --output '$output_dir' \
+#if $input_bam:
+    --input-bam '$input_bam'
 #end if
-@FASTA_FILES@
-SemiBin2
-#if $mode.select == 'single' or $mode.select == 'co'
-    single_easy_bin
-    #if $mode.select == 'single' and str($mode.environment) != ''
-    --environment '$mode.environment'
-    #end if
-    #if $mode.ref.select == "cached":
-    --reference-db-data-dir '$mode.ref.cached_db.fields.path'
-    #end if
-    #if $mode.ref.select == "taxonomy"
-    --taxonomy-annotation-table '$mode.ref.taxonomy_annotation_table'
-    #end if
-#else
-    multi_easy_bin
-    --separator '$separator'
-    #if $mode.ref.select == "cached":
-    --reference-db-data-dir '$mode.ref.cached_db.fields.path'
-    #end if
-    #if $mode.ref.select == "taxonomy"
-    --taxonomy-annotation-table 
-        #for $e in $mode.ref.taxonomy_annotation_table
-            '$e' 
-        #end for
-    #end if
+#if $input_abundance:
+    --input-abundance '$input_abundance'
 #end if
-    --input-fasta 'contigs.$input_fasta.ext'
-    #if $mode.select == "single":
-        --input-bam *.bam
-    #else:
-        #if $mode.align_select.align_select == "bam":
-            --input-bam *.bam
-        #else:
-            -a *.txt
-        #end if
-    #end if
-    --output 'output'
-    --cannot-name 'cannot'
-    @MIN_LEN@
-    --orf-finder '$orf_finder'
-    --random-seed $random_seed
-
-#if $annot.ml_threshold:
-    --ml-threshold $annot.ml_threshold
+#if $environment and str($environment) != 'None':
+    --environment '$environment'
 #end if
-    --epoches $training.epoches
-    --batch-size $training.batch_size
-    --max-node $bin.max_node
-    --max-edges $bin.max_edges
-    --minfasta-kbs $bin.minfasta_kbs
-#if ($mode.select == 'single' or $mode.select == 'co') and $extra_output and "pre_reclustering_bins" in $extra_output
-    --write-pre-reclustering-bins
+#if $sequencing_type and str($sequencing_type) != 'None':
+    --sequencing-type '$sequencing_type'
 #end if
-    --compression none
-    --threads \${GALAXY_SLOTS:-1}
-    --processes \${GALAXY_SLOTS:-1}
-&& 
-echo "output" &&
-ls output
+#if $prodigal_output_faa:
+    --prodigal-output-faa '$prodigal_output_faa'
+#end if
+#if $allow_missing_mmseqs2:
+    --allow-missing-mmseqs2
+#end if
+#if $cannot_name:
+    --cannot-name '$cannot_name'
+#end if
+#if $min_contig_len:
+    --min-contig-len '$min_contig_len'
+#end if
+#if $epochs:
+    --epochs '$epochs'
+#end if
+#if $recluster:
+    --recluster
+#end if
+#if $no_recluster:
+    --no-recluster
+#end if
+#if $random_seed:
+    --random-seed '$random_seed'
+#end if
+#if $verbose:
+    --verbose
+#end if
+#if $quiet:
+    --quiet
+#end if
     ]]></command>
     <inputs>
-        <conditional name="mode">
-            <expand macro="mode_select"/>
-            <when value="single">
-                <expand macro="input-fasta-single"/>
-                    <expand macro="input-bam-single"/>
-                <expand macro="ref-single"/>
-                <expand macro="environment"/>
-            </when>
-            <when value="co">
-                <expand macro="input-fasta-single"/>
-                <conditional name="align_select">
-                    <expand macro="bam_or_strobealign"/>
-                    <when value="bam">
-                        <expand macro="input-bam-multi"/>
-                    </when>
-                    <when value="txt">
-                        <expand macro="input-txt"/>
-                    </when>
-                </conditional>
-                <expand macro="ref-single"/>
-            </when>
-            <when value="multi">
-                <expand macro="input-fasta-multi"/>
-                <conditional name="align_select">
-                    <expand macro="bam_or_strobealign"/>
-                    <when value="bam">
-                        <expand macro="input-bam-multi"/>
-                    </when>
-                    <when value="txt">
-                        <expand macro="input-txt"/>
-                    </when>
-                </conditional>
-                <expand macro="ref-multi"/>
-            </when>
-        </conditional>
-        <expand macro="min_len"/>
-        <expand macro="orf-finder"/>
-        <expand macro="random-seed"/>
-        <section name="annot" title="Contig annotations" expanded="true">
-            <expand macro="ml-threshold"/>
-        </section>
-        <section name="training" title="Training">
-            <expand macro="epoches"/>
-            <expand macro="batch-size"/>
-        </section>
-        <section name="bin" title="Binning">
-            <expand macro="max-node"/>
-            <expand macro="max-edges"/>
-            <expand macro="minfasta-kbs"/>
-        </section>
-        <param name="extra_output" type="select" multiple="true" optional="true" label="Extra outputs" help="In addition to the training data">
-            <option value="data">Training data</option>
-            <option value="coverage">Coverage files</option>
-            <option value="contigs">Contigs (if multiple sample)</option>
-            <option value="pre_reclustering_bins">Pre-reclustering bins (only single sample and co-assembly)</option>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Input FASTA file (contigs)"/>
+        <param name="input_bam" type="data" format="bam" optional="true" label="Input BAM file (reads mapped to contigs)"/>
+        <param name="input_abundance" type="data" format="tabular" optional="true" label="Input abundance file (from strobealign-aemb)"/>
+        <param name="environment" type="select" label="Pretrained environment model" optional="true">
+            <option value="human_gut">human_gut</option>
+            <option value="dog_gut">dog_gut</option>
+            <option value="ocean">ocean</option>
+            <option value="soil">soil</option>
+            <option value="cat_gut">cat_gut</option>
+            <option value="human_oral">human_oral</option>
+            <option value="mouse_gut">mouse_gut</option>
+            <option value="pig_gut">pig_gut</option>
+            <option value="built_environment">built_environment</option>
+            <option value="wastewater">wastewater</option>
+            <option value="chicken_caecum">chicken_caecum</option>
+            <option value="global">global</option>
+            <option value="None" selected="true">None (train new model)</option>
         </param>
+        <param name="sequencing_type" type="select" label="Sequencing type">
+            <option value="short_read">short_read</option>
+            <option value="long_read">long_read</option>
+            <option value="hybrid">hybrid (synonym for long_read)</option>
+        </param>
+        <param name="prodigal_output_faa" type="data" format="fasta" optional="true" label="Prodigal output FAA file" help="DEPRECATED – no longer used"/>
+        <param name="allow_missing_mmseqs2" type="boolean" truevalue="--allow-missing-mmseqs2" falsevalue="" checked="false" label="Allow missing mmseqs2" help="DEPRECATED – option is a no-op" visible="false"/>
+        <param name="cannot_name" type="text" value="cannot.txt" label="Cannot link file name" help="Name of the cannot link file"/>
+        <param name="min_contig_len" type="integer" value="2500" label="Minimum contig length" help="Minimum length of contigs to bin"/>
+        <param name="epochs" type="integer" value="150" label="Number of epochs" help="Number of epochs for training"/>
+        <param name="recluster" type="boolean" truevalue="--recluster" falsevalue="" checked="true" label="Recluster" help="Enable reclustering (default)"/>
+        <param name="no_recluster" type="boolean" truevalue="--no-recluster" falsevalue="" checked="false" label="No recluster" help="Disable reclustering"/>
+        <param name="random_seed" type="integer" value="42" label="Random seed" help="Random seed for reproducibility"/>
+        <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose output"/>
+        <param name="quiet" type="boolean" truevalue="--quiet" falsevalue="" checked="false" label="Quiet output"/>
     </inputs>
     <outputs>
-        <collection name="output_pre_recluster_bins" type="list" label="${tool.name} on ${on_string}: Reconstructed bins before reclustering">
-            <filter>mode['select']!="multi" and extra_output and "pre_reclustering_bins" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/output_prerecluster_bins"/>
-        </collection>
-        <collection name="output_after_recluster_bins" type="list" label="${tool.name} on ${on_string}: Reconstructed bins after reclustering">
-            <filter>mode['select']!="multi" and extra_output and "pre_reclustering_bins" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/output_recluster_bins"/>
-        </collection>
-        <collection name="output_bins" type="list" label="${tool.name} on ${on_string}: Reconstructed bins">
-            <filter>mode['select']!="multi" and not "pre_reclustering_bins" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/output_bins"/>
-        </collection>
-        <collection name="multi_bins" type="list" label="${tool.name} on ${on_string}: Reconstructed bins before reclustering (multi_bins)">
-            <filter>mode['select']=="multi"</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*).fa" format="fasta" directory="output/bins"/>
-        </collection>
-        <data name="single_data" format="csv" from_work_dir="output/data.csv" label="${tool.name} on ${on_string}: Training data">
-            <filter>(mode['select']=="single" or mode['select']=="co") and extra_output and "data" in extra_output</filter>
-        </data>
-        <data name="single_data_split" format="csv" from_work_dir="output/data_split.csv" label="${tool.name} on ${on_string}: Split training data">
-            <filter>(mode['select']=="single" or mode['select']=="co") and extra_output and "data" in extra_output</filter>
-        </data>
-        <collection name="multi_data" type="list" label="${tool.name} on ${on_string}: Training data per sample">
-            <filter>mode['select']=="multi" and extra_output and "data" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*)\/data.csv" format="csv" directory="output/samples/" recurse="true" match_relative_path="true"/>
-        </collection>
-        <collection name="multi_data_split" type="list" label="${tool.name} on ${on_string}: Split training data per sample">
-            <filter>mode['select']=="multi" and extra_output and "data" in extra_output</filter>
-            <discover_datasets pattern="(?P&lt;designation&gt;.*)\/data_split.csv" format="csv" directory="output/samples/" recurse="true" match_relative_path="true"/>
-        </collection>
-        <expand macro="generate_sequence_features_extra_outputs_main"/>
+        <data name="output_dir" format="directory" label="SemiBin2 output directory"/>
     </outputs>
     <tests>
-        <test expect_num_outputs="5">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.gz" value="input_single.fasta.gz"/>
-                <param name="input_bam" ftype="bam" value="input_single.bam"/>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-                <param name="environment" value="human_gut"/>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="0" />
-            </conditional>
-            <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="data,coverage,contigs"/>
-            <output name="single_data" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0"/>
-                    <has_text text="g4k_7"/>
-                </assert_contents>
-            </output>
-            <output name="single_data_split" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0_1"/>
-                    <has_text text="g1k_6_2"/>
-                </assert_contents>
-            </output>
-            <output name="single_cov" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0"/>
-                    <has_text text="0.027"/>
-                </assert_contents>
-            </output>
-            <output name="single_split_cov" ftype="csv">
-                <assert_contents>
-                    <has_size value="1" delta="1"/>
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="5">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.bz2" value="input_single.fasta.bz2"/>
-                <param name="input_bam" ftype="bam" value="input_single.bam"/>
-                <conditional name="ref">
-                    <param name="select" value="ml"/>
-                </conditional>
-                <param name="environment" value="human_gut"/>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="0" />
-            </conditional>
-            <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="data,coverage,contigs"/>
-            <output name="single_data" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0"/>
-                    <has_text text="g4k_7"/>
-                </assert_contents>
-            </output>
-            <output name="single_data_split" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0_1"/>
-                    <has_text text="g1k_6_2"/>
-                </assert_contents>
-            </output>
-            <output name="single_cov" ftype="csv">
-                <assert_contents>
-                    <has_text text="g1k_0"/>
-                    <has_text text="0.027"/>
-                </assert_contents>
-            </output>
-            <output name="single_split_cov" ftype="csv">
-                <assert_contents>
-                    <has_size value="1" delta="1"/>
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="3">
-            <conditional name="mode">
-                <param name="select" value="co"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <conditional name="align_select">
-                    <param name="align_select" value="bam"/>
-                    <param name="input_bam" ftype="bam" value="input_coassembly_sorted1.bam,input_coassembly_sorted2.bam,input_coassembly_sorted3.bam,input_coassembly_sorted4.bam,input_coassembly_sorted5.bam"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="ml"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="coverage"/>
-            <output_collection name="co_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="4" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="co_split_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="2" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <test expect_num_outputs="3">
-            <conditional name="mode">
-                <param name="select" value="co"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <conditional name="align_select">
-                    <param name="align_select" value="bam"/>
-                    <param name="input_bam" ftype="bam" value="input_coassembly_sorted1.bam,input_coassembly_sorted2.bam,input_coassembly_sorted3.bam,input_coassembly_sorted4.bam,input_coassembly_sorted5.bam"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="coverage"/>
-            <output_collection name="co_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="4" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="co_split_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="2" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <test expect_num_outputs="3">
-            <conditional name="mode">
-                <param name="select" value="co"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <conditional name="align_select">
-                    <param name="align_select" value="bam"/>
-                    <param name="input_bam" ftype="bam" value="input_coassembly_sorted1.bam,input_coassembly_sorted2.bam,input_coassembly_sorted3.bam,input_coassembly_sorted4.bam,input_coassembly_sorted5.bam"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="annot">
-                <param name="ml_threshold" value="0"/>
-            </section>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="coverage"/>
-            <output_collection name="co_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-                <element name="4" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0"/>
-                        <has_text text="g2k_7"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="co_split_cov_bam" count="5">
-                <element name="0" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="1" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-                <element name="2" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1"/>
-                        <has_text text="g2k_7_2"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test_contigs.fasta"/>
+            <param name="environment" value="human_gut"/>
+            <param name="sequencing_type" value="short_read"/>
+            <output name="output_dir" ftype="directory" count="&gt;0"/>
         </test>
         <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <param name="input_bam" ftype="bam" value="input_single.bam"/>
-                <conditional name="ref">
-                    <param name="select" value="cached"/>
-                    <param name="cached_db" value="test-db"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="annot">
-                <param name="ml_threshold" value="0"/>
-            </section>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
+            <param name="input_fasta" value="test_contigs.fasta"/>
+            <param name="sequencing_type" value="hybrid"/>
+            <output name="output_dir" ftype="directory" count="&gt;0"/>
         </test>
-        <test expect_num_outputs="2">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <param name="input_bam" ftype="bam" value="input_single.bam"/>
-                <conditional name="ref">
-                    <param name="select" value="cached"/>
-                    <param name="cached_db" value="test-db"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="annot">
-                <param name="ml_threshold" value="0"/>
-            </section>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="pre_reclustering_bins"/>
-            <output_collection name="output_pre_recluster_bins">
-                <element name="SemiBin_0" ftype="fasta">
-                    <assert_contents>    
-                        <has_text text="g1k_0"/>
-                    </assert_contents>
-                </element>
-                <element name="SemiBin_1" ftype="fasta">
-                    <assert_contents>    
-                        <has_text text="g2k_0"/>
-                    </assert_contents>
-                </element>
-                <element name="SemiBin_2" ftype="fasta">
-                    <assert_contents>    
-                        <has_text text="g3k_0"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="output_after_recluster_bins" count="1">
-                <element name="SemiBin_30" ftype="fasta">
-                    <assert_contents>
-                        <has_text text="g3k_0"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <test expect_num_outputs="8">
-            <conditional name="mode">
-                <param name="select" value="multi"/>
-                <conditional name="multi_fasta">
-                    <param name="select" value="concatenated"/>
-                    <param name="input_fasta" ftype="fasta" value="input_multi.fasta.gz"/>
-                </conditional>
-                <conditional name="align_select">
-                    <param name="align_select" value="bam"/>
-                    <param name="input_bam" ftype="bam" value="input_multi_sorted1.bam,input_multi_sorted2.bam,input_multi_sorted3.bam,input_multi_sorted4.bam,input_multi_sorted5.bam,input_multi_sorted6.bam,input_multi_sorted7.bam,input_multi_sorted8.bam,input_multi_sorted9.bam,input_multi_sorted10.bam"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv,taxonomy_2.tsv,taxonomy_3.tsv,taxonomy_4.tsv,taxonomy_5.tsv,taxonomy_6.tsv,taxonomy_7.tsv,taxonomy_8.tsv,taxonomy_9.tsv,taxonomy_10.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="1"/>
-                <param name="max_edges" value="200"/>
-                <param name="minfasta_kbs" value="200"/>
-            </section>
-            <param name="extra_output" value="data,coverage,contigs"/>
-            <output_collection name="multi_bins" count="0"/>
-            <output_collection name="multi_data" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_data_split" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_cov_bam" count="10">
-                <element name="8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="S1:g1k_5,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_cov_sample_bam" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_3"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_split_cov_bam" count="10">
-                <element name="8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="S1:g1k_5_1,0."/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_split_cov_sample_bam" count="10">
-                <element name="8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_3_1"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_contigs" count="10">
-                <element name="S8" ftype="fasta">
-                    <assert_contents>
-                        <has_text text=">g1k_0"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>
-        <test expect_num_outputs="6">
-            <conditional name="mode">
-                <param name="select" value="co"/>
-                <param name="input_fasta" ftype="fasta" value="input_multi.fasta.gz"/>
-                <conditional name="align_select">
-                    <param name="align_select" value="txt"/>
-                    <param name="abundance" ftype="txt" value="strobealign_1.txt,strobealign_2.txt,strobealign_3.txt,strobealign_4.txt,strobealign_5.txt"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="annot">
-                <param name="ml_threshold" value="0"/>
-            </section>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="0.15"/>
-                <param name="max_edges" value="20"/>
-                <param name="minfasta_kbs" value="20"/>
-            </section>
-            <param name="extra_output" value="data,coverage,contigs,pre_reclustering_bins"/>
-        </test> 
-        <test expect_num_outputs="6">
-            <conditional name="mode">
-                <param name="select" value="multi"/>
-                <conditional name="multi_fasta">
-                    <param name="select" value="concatenated"/>
-                    <param name="input_fasta" ftype="fasta" value="input_multi.fasta.gz"/>
-                </conditional>
-                <conditional name="align_select">
-                    <param name="align_select" value="txt"/>
-                    <param name="abundance" ftype="txt" value="strobealign_1.txt,strobealign_2.txt,strobealign_3.txt,strobealign_4.txt,strobealign_5.txt"/>
-                </conditional>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv,taxonomy_2.tsv,taxonomy_3.tsv,taxonomy_4.tsv,taxonomy_5.tsv,taxonomy_6.tsv,taxonomy_7.tsv,taxonomy_8.tsv,taxonomy_9.tsv,taxonomy_10.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05"/>
-            </conditional>
-            <param name="orf_finder" value="fast-naive"/>
-            <param name="random_seed" value="0"/>
-            <section name="annot">
-                <param name="ml_threshold" value="0"/>
-            </section>
-            <section name="training">
-                <param name="epoches" value="20"/>
-                <param name="batch_size" value="2048"/>
-            </section>
-            <section name="bin">
-                <param name="max_node" value="0.15"/>
-                <param name="max_edges" value="30"/>
-                <param name="minfasta_kbs" value="30"/>
-            </section>
-            <param name="extra_output" value="data,coverage,contigs"/>
-            <output_collection name="multi_bins" count="10"/>
-            <output_collection name="multi_data" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_data_split" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_0_1,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_cov_txt" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_5,"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_split_cov_txt" count="10">
-                <element name="S8" ftype="csv">
-                    <assert_contents>
-                        <has_text text="g1k_5_1,1."/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-            <output_collection name="multi_contigs" count="10">
-                <element name="S8" ftype="fasta">
-                    <assert_contents>
-                        <has_text text=">g1k_0"/>
-                    </assert_contents>
-                </element>
-            </output_collection>
-        </test>        
     </tests>
-    <help><![CDATA[
-**Please note that there is a known issue with Semibin2 where results may be inconsistent across runs on different, despite a set seed. This may cause issues with reproducibility.**
-For more information, see this [issue]{https://github.com/BigDataBiology/SemiBin/issues/186} on their repository: https://github.com/BigDataBiology/SemiBin/issues/186
+    <help format="markdown"><![CDATA[
+**What it does**
 
-@HELP_HEADER@
+SemiBin2 is a metagenomic binning tool that uses semi-supervised deep learning to generate high-quality metagenome-assembled genomes (MAGs) from short- and long-read sequencing data.
 
-Inputs
-======
+**Changes in v2.5.0**
 
-@HELP_INPUT_FASTA@
-@HELP_INPUT_BAM@
+- Added `hybrid` as a synonym for `long_read` in `--sequencing-type`
+- Deprecated `--prodigal-output-faa` (no longer used)
+- Deprecated `--allow-missing-mmseqs2` (no-op)
+- Removed `--environment` parameter from training step (use pretrained models instead)
 
+**Usage**
+
+Run SemiBin2 with a pretrained environment model:
+
+```bash
+SemiBin2 single_easy_bin -i contigs.fasta -b reads.bam -o output --environment human_gut
+```
+
+Or train a new model:
+
+```bash
+SemiBin2 single_easy_bin -i contigs.fasta -b reads.bam -o output
+```
+
+For long-read data:
+
+```bash
+SemiBin2 single_easy_bin -i contigs.fasta -b reads.bam -o output --sequencing-type long_read
+```
+
+For hybrid (long + short) data:
+
+```bash
+SemiBin2 single_easy_bin -i contigs.fasta -b reads.bam -o output --sequencing-type hybrid
+```
+
+**Citation**
+
+Pan S, Zhu C, Zhao XM, Coelho LP. A deep siamese neural network improves metagenome-assembled genomes in microbiome datasets across different environments. *Nature Communications* 2022. DOI: 10.1038/s41467-022-29843-y
+
+Pan S, Zhao XM, Coelho LP. SemiBin2: self-supervised contrastive learning leads to better MAGs for short- and long-read sequencing. *Bioinformatics* 2023. DOI: 10.1093/bioinformatics/btad209
     ]]></help>
     <expand macro="citations"/>
 </tool>
