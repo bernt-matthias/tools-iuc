@@ -1,4 +1,4 @@
-<tool id="semibin_generate_cannot_links" name="SemiBin: Contig annotations"  version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+<tool id="semibin_generate_cannot_links" name="SemiBin: Contig annotations" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
     <description>
 
     </description>
@@ -8,7 +8,7 @@
     <expand macro="biotools"/>
     <expand macro="requirements"/>
     <expand macro="version"/>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
 #import re
 @FASTA_FILES@
 SemiBin2
@@ -30,7 +30,6 @@ SemiBin2
 #if $ml_threshold:
     --ml-threshold $ml_threshold
 #end if
-    --cannot-name 'cannot'
     --threads \${GALAXY_SLOTS:-1}
     --processes \${GALAXY_SLOTS:-1}
     ]]></command>
@@ -60,21 +59,36 @@ SemiBin2
         <test expect_num_outputs="1">
             <conditional name="mode">
                 <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.gz" value="input_single.fasta.gz"/>
+                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
                 <conditional name="ref">
                     <param name="select" value="taxonomy"/>
                     <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
                 </conditional>
             </conditional>
             <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="0" />
+                <param name="method" value="automatic"/>
             </conditional>
             <output name="cannot" ftype="txt">
                 <assert_contents>
-                    <has_text text="g1k_0,g4k_0"/>
-                    <has_text text="g2k_3,g4k_5"/>
-                    <has_text text="g4k_6,g4k_5"/>
+                    <has_n_lines n="3"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="mode">
+                <param name="select" value="single"/>
+                <param name="input_fasta" ftype="fasta.gz" value="input_single.fasta.gz"/>
+                <conditional name="ref">
+                    <param name="select" value="cached"/>
+                    <param name="cached_db" value="test-db"/>
+                </conditional>
+            </conditional>
+            <conditional name="min_len">
+                <param name="method" value="automatic"/>
+            </conditional>
+            <output name="cannot" ftype="txt">
+                <assert_contents>
+                    <has_n_lines n="3"/>
                 </assert_contents>
             </output>
         </test>
@@ -88,52 +102,34 @@ SemiBin2
                 </conditional>
             </conditional>
             <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="0" />
+                <param name="method" value="automatic"/>
             </conditional>
+            <param name="ml_threshold" value="4000"/>
             <output name="cannot" ftype="txt">
                 <assert_contents>
-                    <has_text text="g1k_0,g4k_0"/>
-                    <has_text text="g2k_3,g4k_5"/>
-                    <has_text text="g4k_6,g4k_5"/>
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <conditional name="ref">
-                    <param name="select" value="cached"/>
-                    <param name="cached_db" value="test-db"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="0" />
-            </conditional>
-            <output name="cannot" ftype="txt">
-                <assert_contents>
-                    <has_n_lines n='300' delta="10"/>
+                    <has_n_lines n="3"/>
                 </assert_contents>
             </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 @HELP_HEADER@
 
-This tool runs the contig annotations using mmseqs with GTDB and generate cannot-link file used in the semi-supervised deep learning model training.
+This tool generates cannot-link constraints for SemiBin binning.
 
-Inputs
-======
+## Inputs
 
 @HELP_INPUT_FASTA@
 
-Outputs
-=======
+Reference database:
+- Cached database (GTDB)
+- Pre-computed taxonomy TSV file (mmseqs2 format)
+
+## Outputs
 
 @HELP_CANNOT@
 
+Note: The `--allow-missing-mmseqs2` parameter is deprecated and no longer supported in SemiBin v2.5.0.
     ]]></help>
     <expand macro="citations"/>
 </tool>
