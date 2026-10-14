@@ -3,7 +3,8 @@ api:
   # https://api.helmholtz-blablador.fz-juelich.de/v1   # or https://api.openai.com/v1
   model: qwen3-coder-next         # or gpt-4o, etc.
   fallback_models:                          # optional; tried in order if primary fails
-    - qwen3-30b-a3b-instruct-2507
+    - meta-llama-3.1-8b-instruct
+    - deepseek-v4-flash-0731
   max_tool_iterations: 25
   # Optional: scale validation retry rounds by the number of tool XMLs in the plan.
   # The generator gets max_validation_retries + validation_retries_per_extra_tool_xml * (N - 1)
