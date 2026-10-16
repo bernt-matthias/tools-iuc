@@ -18,7 +18,7 @@ SemiBin2 bin
     --model '$mod.model'
 #end if
     --output 'output'
-    --threads \${GALAXY_SLOTS:-1}
+    --threads "\${GALAXY_SLOTS:-1}"
     --minfasta-kbs $minfasta_kbs
 #if $mode.select == 'single' or $mode_fasta.mode_select == 'co'
     $write_pre_reclustering_bins
@@ -29,6 +29,9 @@ SemiBin2 bin
     --compression none
     @MIN_LEN@
     --orf-finder '$orf_finder'
+#if $environment:
+    --environment '$environment'
+#end if
     ]]></command>
     <inputs>
         <expand macro="mode_fasta"/>
@@ -52,6 +55,7 @@ SemiBin2 bin
         <expand macro="max-edges"/>
         <expand macro="minfasta-kbs"/>
         <expand macro="write_pre_reclustering_bins"/>
+        <expand macro="environment"/>
     </inputs>
     <outputs>
         <collection name="output_bins" type="list" label="${tool.name} on ${on_string}: Reconstructed bins after reclustering">

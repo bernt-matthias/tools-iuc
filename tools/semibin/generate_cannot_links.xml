@@ -1,6 +1,6 @@
-<tool id="semibin_generate_cannot_links" name="SemiBin: Contig annotations" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+<tool id="semibin_generate_cannot_links" name="SemiBin: Generate cannot-links" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
     <description>
-
+        for semi-supervised binning
     </description>
     <macros>
         <import>macros.xml</import>
@@ -11,62 +11,44 @@
     <command detect_errors="aggressive"><![CDATA[
 #import re
 @FASTA_FILES@
-SemiBin2
-    generate_cannot_links
-#if $mode.select == 'single' or $mode.select == 'co'
+
+SemiBin2 generate_cannot_links
     --input-fasta 'contigs.$input_fasta.ext'
-#else
-    --input_fasta 'contigs.fasta'
-#end if
     --output 'output'
     --cannot-name 'cannot'
-#if $mode.ref.select == "cached"
-    --reference-db-data-dir '$mode.ref.cached_db.fields.path'
+#if $ref.select == 'cached'
+    --reference-db-data-dir '$ref.cached_db.fields.path'
+#else if $ref.select == 'taxonomy'
+    --taxonomy-annotation-table '$ref.taxonomy'
 #end if
-#if $mode.ref.select == "taxonomy"
-    --taxonomy-annotation-table '$mode.ref.taxonomy_annotation_table'
-#end if
-    @MIN_LEN@
+    --threads "\${GALAXY_SLOTS:-1}"
+    --processes "\${GALAXY_SLOTS:-1}"
 #if $ml_threshold:
     --ml-threshold $ml_threshold
 #end if
-    --threads \${GALAXY_SLOTS:-1}
-    --processes \${GALAXY_SLOTS:-1}
+#if $allow_missing_mmseqs2:
+    --allow-missing-mmseqs2
+#end if
     ]]></command>
     <inputs>
+        <expand macro="mode_select"/>
         <conditional name="mode">
-            <expand macro="mode_select"/>
-            <when value="single">
-                <expand macro="input-fasta-single"/>
-                <expand macro="ref-single-cannot"/>
-            </when>
-            <when value="co">
-                <expand macro="input-fasta-single"/>
-                <expand macro="ref-single-cannot"/>
-            </when>
-            <when value="multi">
-                <expand macro="input-fasta-multi"/>
-                <expand macro="ref-multi-cannot"/>
-            </when>
+            <param name="select" value="single"/>
+            <expand macro="input-fasta-single"/>
+            <expand macro="ref-single-cannot"/>
         </conditional>
-        <expand macro="min_len"/>
         <expand macro="ml-threshold"/>
+        <param name="allow_missing_mmseqs2" type="boolean" truevalue="--allow-missing-mmseqs2" falsevalue="" checked="false" label="Allow missing mmseqs2" help="Allow running without mmseqs2 (only for testing)"/>
     </inputs>
     <outputs>
         <expand macro="cannot_link_output"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="automatic"/>
+            <param name="input_fasta" ftype="fasta" value="input_single.fasta"/>
+            <conditional name="ref">
+                <param name="select" value="taxonomy"/>
+                <param name="taxonomy" ftype="tabular" value="taxonomy.tsv"/>
             </conditional>
             <output name="cannot" ftype="txt">
                 <assert_contents>
@@ -75,16 +57,10 @@ SemiBin2
             </output>
         </test>
         <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.gz" value="input_single.fasta.gz"/>
-                <conditional name="ref">
-                    <param name="select" value="cached"/>
-                    <param name="cached_db" value="test-db"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="automatic"/>
+            <param name="input_fasta" ftype="fasta.gz" value="input_single.fasta.gz"/>
+            <conditional name="ref">
+                <param name="select" value="cached"/>
+                <param name="cached_db" value="test-db"/>
             </conditional>
             <output name="cannot" ftype="txt">
                 <assert_contents>
@@ -93,16 +69,10 @@ SemiBin2
             </output>
         </test>
         <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.bz2" value="input_single.fasta.bz2"/>
-                <conditional name="ref">
-                    <param name="select" value="taxonomy"/>
-                    <param name="taxonomy_annotation_table" value="taxonomy.tsv"/>
-                </conditional>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="automatic"/>
+            <param name="input_fasta" ftype="fasta.bz2" value="input_single.fasta.bz2"/>
+            <conditional name="ref">
+                <param name="select" value="taxonomy"/>
+                <param name="taxonomy" ftype="tabular" value="taxonomy.tsv"/>
             </conditional>
             <param name="ml_threshold" value="4000"/>
             <output name="cannot" ftype="txt">
@@ -115,21 +85,20 @@ SemiBin2
     <help format="markdown"><![CDATA[
 @HELP_HEADER@
 
-This tool generates cannot-link constraints for SemiBin binning.
+This tool generates cannot-links for semi-supervised binning.
 
 ## Inputs
 
 @HELP_INPUT_FASTA@
 
-Reference database:
-- Cached database (GTDB)
-- Pre-computed taxonomy TSV file (mmseqs2 format)
+## Reference database
+
+- Cached database: Use a pre-cached GTDB database
+- Taxonomy: Use a pre-computed taxonomy file
 
 ## Outputs
 
-@HELP_CANNOT@
-
-Note: The `--allow-missing-mmseqs2` parameter is deprecated and no longer supported in SemiBin v2.5.0.
+- Cannot-link constraints file
     ]]></help>
     <expand macro="citations"/>
 </tool>
