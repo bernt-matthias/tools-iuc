@@ -8,7 +8,7 @@
     <expand macro="biotools"/>
     <expand macro="requirements"/>
     <expand macro="version"/>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
 #import re
 #if $input_type_select.input_type == "bam":
     @BAM_FILES@
@@ -107,7 +107,8 @@ SemiBin2
                     <has_n_lines n="1" delta="1"/>
                 </assert_contents>
             </output>
-        </test><test expect_num_outputs="4">
+        </test>
+        <test expect_num_outputs="4">
             <conditional name="input_type_select">
                 <param name="input_type" value="bam"/>
                 <conditional name="mode">
@@ -303,17 +304,16 @@ SemiBin2
             <output_collection name="multi_contigs" count="10">
                 <element name="S1" ftype="fasta">
                     <assert_contents>
-                        <has_text text=">g1k_0"/>
+                        <has_text text="&gt;g1k_0"/>
                     </assert_contents>
                 </element>
                 <element name="S9" ftype="fasta">
                     <assert_contents>
-                        <has_text text=">g1k_0"/>
+                        <has_text text="&gt;g1k_0"/>
                     </assert_contents>
                 </element>
             </output_collection>
         </test>
-
         <test expect_num_outputs="5">
             <conditional name="input_type_select">
                 <param name="input_type" value="txt"/>
@@ -372,12 +372,12 @@ SemiBin2
             <output_collection name="multi_contigs" count="10">
                 <element name="S1" ftype="fasta">
                     <assert_contents>
-                        <has_text text=">g1k_0"/>
+                        <has_text text="&gt;g1k_0"/>
                     </assert_contents>
                 </element>
                 <element name="S9" ftype="fasta">
                     <assert_contents>
-                        <has_text text=">g1k_0"/>
+                        <has_text text="&gt;g1k_0"/>
                     </assert_contents>
                 </element>
             </output_collection>
@@ -416,21 +416,18 @@ SemiBin2
             </output_collection>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 @HELP_HEADER@
 
 This tool generates sequence features (kmer and abundance) as training data for semi-supervised deep learning model training.
 
-Inputs
-======
+## Inputs
 
 @HELP_INPUT_FASTA@
 
-Outputs
-=======
+## Outputs
 
 @HELP_DATA@
-
     ]]></help>
     <expand macro="citations"/>
 </tool>

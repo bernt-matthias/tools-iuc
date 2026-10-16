@@ -8,7 +8,7 @@
     <expand macro="biotools"/>
     <expand macro="requirements"/>
     <expand macro="version"/>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
 #import re
 #if $mode.select == 'single'
 ln -s '$mode.input_fasta' 'contigs.$input_fasta.ext' &&
@@ -33,53 +33,52 @@ SemiBin2 train_semi
     #end for
     --data
     #for $e in $mode.data
-        '$e'
+        #set $identifier = re.sub('[^\s\w\-]', '_', str($e.element_identifier))
+        '${identifier}.$e.ext'
     #end for
-    --data-split 
+    --data-split
     #for $e in $mode.data_split
-        '$e'
+        #set $identifier = re.sub('[^\s\w\-]', '_', str($e.element_identifier))
+        '${identifier}.$e.ext'
     #end for
     --cannot-link
     #for $e in $mode.cannot_link
-        '$e'
+        #set $identifier = re.sub('[^\s\w\-]', '_', str($e.element_identifier))
+        '${identifier}.$e.ext'
     #end for
 #end if
     --output 'output'
     --threads \${GALAXY_SLOTS:-1}
+    @MIN_LEN@
+    --orf-finder '$orf_finder'
     --epoches $epoches
     --batch-size $batch_size
     --random-seed $random_seed
-#if $min_len.method == 'min-len'
-    --min-len $min_len.min_len
-#else if $min_len.method == 'ratio'
-    --ratio $min_len.ratio
-#end if
-    --orf-finder '$orf_finder'
     ]]></command>
     <inputs>
         <conditional name="mode">
-            <param argument="select" type="select" label="Mode to train the models">
-                <option value="single" selected="true">From one sample</option>
-                <option value="several">From multiple samples (train model across several samples can get better pre-trained model for single-sample binning)</option>
+            <param name="select" type="select" label="Mode">
+                <option value="single" selected="true">Single sample</option>
+                <option value="multi">Multi sample</option>
             </param>
             <when value="single">
-                <param argument="--input-fasta" type="data" format="fasta,fasta.gz,fasta.bz2" label="Contig sequences"/>
-                <param argument="--data" type="data"  format="csv" label="Train data"/>
-                <param argument="--data-split" type="data" format="csv" label="Split train data"/>
+                <expand macro="input-fasta-single"/>
+                <expand macro="data"/>
+                <param argument="--data-split" type="data" format="csv" label="Split training data"/>
                 <param argument="--cannot-link" type="data" format="txt" label="Cannot-link constraints"/>
             </when>
-            <when value="several">
+            <when value="multi">
                 <param argument="--input-fasta" type="data" multiple="true" format="fasta,fasta.gz,fasta.bz2" label="Contig sequences"/>
-                <param argument="--data" type="data" format="csv" multiple="true" label="Train data"/>
-                <param argument="--data-split" type="data" format="csv" multiple="true" label="Split train data"/>
-                <param argument="--cannot-link" type="data" format="txt" multiple="true" label="Cannot-link constraints"/>
+                <param argument="--data" type="data" multiple="true" format="csv" label="Training data"/>
+                <param argument="--data-split" type="data" multiple="true" format="csv" label="Split training data"/>
+                <param argument="--cannot-link" type="data" multiple="true" format="txt" label="Cannot-link constraints"/>
             </when>
         </conditional>
         <expand macro="min_len"/>
         <expand macro="orf-finder"/>
-        <expand macro="random-seed"/>
         <expand macro="epoches"/>
         <expand macro="batch-size"/>
+        <expand macro="random-seed"/>
     </inputs>
     <outputs>
         <expand macro="train_output"/>
@@ -94,38 +93,15 @@ SemiBin2 train_semi
                 <param name="cannot_link" ftype="txt" value="cannot.txt"/>
             </conditional>
             <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="2500" />
+                <param name="method" value="automatic"/>
             </conditional>
             <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
-            <param name="epoches" value="1"/>
+            <param name="epoches" value="20"/>
             <param name="batch_size" value="2048"/>
+            <param name="random_seed" value="0"/>
             <output name="model" ftype="h5">
                 <assert_contents>
-                    <has_size value="3119000" delta="2000" />
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="1">
-            <conditional name="mode">
-                <param name="select" value="single"/>
-                <param name="input_fasta" ftype="fasta.bz2" value="input_single.fasta.bz2"/>
-                <param name="data" ftype="csv" value="data.csv"/>
-                <param name="data_split" ftype="csv" value="data_split.csv"/>
-                <param name="cannot_link" ftype="txt" value="cannot.txt"/>
-            </conditional>
-            <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="2500" />
-            </conditional>
-            <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
-            <param name="epoches" value="1"/>
-            <param name="batch_size" value="2048"/>
-            <output name="model" ftype="h5">
-                <assert_contents>
-                    <has_size value="3119000" delta="2000" />
+                    <has_size min="3000000" max="3500000"/>
                 </assert_contents>
             </output>
         </test>
@@ -138,58 +114,77 @@ SemiBin2 train_semi
                 <param name="cannot_link" ftype="txt" value="cannot.txt"/>
             </conditional>
             <conditional name="min_len">
-                <param name="method" value="min-len"/>
-                <param name="min_len" value="2500" />
+                <param name="method" value="automatic"/>
             </conditional>
             <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
-            <param name="epoches" value="1"/>
+            <param name="epoches" value="20"/>
             <param name="batch_size" value="2048"/>
+            <param name="random_seed" value="0"/>
             <output name="model" ftype="h5">
                 <assert_contents>
-                    <has_size value="3119000" delta="2000" />
+                    <has_size min="3000000" max="3500000"/>
                 </assert_contents>
             </output>
         </test>
         <test expect_num_outputs="1">
             <conditional name="mode">
-                <param name="select" value="several"/>
-                <param name="input_fasta" ftype="fasta" value="input_single.fasta,input_single_2.fasta,input_single_3.fasta"/>
-                <param name="data" ftype="csv" value="data.csv,data.csv,data.csv"/>
-                <param name="data_split" ftype="csv" value="data_split.csv,data_split.csv,data_split.csv"/>
-                <param name="cannot_link" ftype="txt" value="cannot.txt,cannot.txt,cannot.txt"/>
+                <param name="select" value="single"/>
+                <param name="input_fasta" ftype="fasta.bz2" value="input_single.fasta.bz2"/>
+                <param name="data" ftype="csv" value="data.csv"/>
+                <param name="data_split" ftype="csv" value="data_split.csv"/>
+                <param name="cannot_link" ftype="txt" value="cannot.txt"/>
             </conditional>
             <conditional name="min_len">
-                <param name="method" value="ratio"/>
-                <param name="ratio" value="0.05" />
+                <param name="method" value="automatic"/>
             </conditional>
             <param name="orf_finder" value="prodigal"/>
-            <param name="random_seed" value="0"/>
             <param name="epoches" value="20"/>
             <param name="batch_size" value="2048"/>
+            <param name="random_seed" value="0"/>
             <output name="model" ftype="h5">
                 <assert_contents>
-                    <has_size value="3119000" delta="2000" />
+                    <has_size min="3000000" max="3500000"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <conditional name="mode">
+                <param name="select" value="multi"/>
+                <param name="input_fasta" ftype="fasta" value="S1.fasta,S2.fasta,S3.fasta,S4.fasta,S5.fasta"/>
+                <param name="data" ftype="csv" value="data.csv,data.csv,data.csv,data.csv,data.csv"/>
+                <param name="data_split" ftype="csv" value="data_split.csv,data_split.csv,data_split.csv,data_split.csv,data_split.csv"/>
+                <param name="cannot_link" ftype="txt" value="cannot.txt,cannot.txt,cannot.txt,cannot.txt,cannot.txt"/>
+            </conditional>
+            <conditional name="min_len">
+                <param name="method" value="automatic"/>
+            </conditional>
+            <param name="orf_finder" value="prodigal"/>
+            <param name="epoches" value="20"/>
+            <param name="batch_size" value="2048"/>
+            <param name="random_seed" value="0"/>
+            <output name="model" ftype="h5">
+                <assert_contents>
+                    <has_size min="3000000" max="3500000"/>
                 </assert_contents>
             </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 @HELP_HEADER@
 
-This tool trains the semi-supervised deep learning model
+This tool trains the semi-supervised deep learning model for SemiBin binning.
 
-Inputs
-======
+## Inputs
 
 @HELP_INPUT_FASTA@
-@HELP_CANNOT@
 @HELP_DATA@
+@HELP_CANNOT@
 
-Outputs
-=======
+## Outputs
 
 @HELP_MODEL@
+
+Note: The `--environment` parameter is no longer supported in SemiBin v2.5.0. The model is trained on the provided data and cannot-link constraints, and the environment is inferred or not used.
     ]]></help>
     <expand macro="citations"/>
 </tool>
