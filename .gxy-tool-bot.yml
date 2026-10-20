@@ -1,6 +1,6 @@
 api:
   base_url: https://api.helmholtz-blablador.fz-juelich.de/v1
-  model: qdeepseek-v4.1-flash-at-hzdr
+  model: deepseek-v4.1-flash-at-hzdr
   fallback_models:
     - alias-code
     - alias-fast
