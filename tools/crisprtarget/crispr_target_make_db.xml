@@ -84,6 +84,11 @@ directories) to the Galaxy administrator, who adds one line per database pair to
 ``crispr_target_databases`` data table, so that the databases can be selected in the CRISPRTarget
 tool. See the help of the CRISPRTarget tool for details.
 
+Administrators can use the *CRISPRTarget database builder* data manager for this: it builds the
+database pair from a FASTA file of a history, from a URL or from the public reference databases
+(viral and other sequences, phage, plasmid) that the CRISPRTarget authors distribute on Zenodo,
+installs it in the Galaxy data manager directory and adds the entry to the data table.
+
 If you only want to run a single search, the CRISPRTarget tool can also build the databases from a
 FASTA file of your history on the fly, in which case this tool is not needed.
 
