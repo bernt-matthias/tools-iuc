@@ -85,10 +85,16 @@
         -out out/input_array_report.tab.txt
         -min_score $scoring.min_score
         -compute_pval -guess_url $pam_option &&
+    ## only the requested reports are rendered
+#if $reports.text_report
     CRISPRTargetGraphics.pl -in out/input_array_report.tab.txt
         -txt out/input_array_report.txt -include_url -include_pvalue &&
+#end if
+#if $reports.html_report
     CRISPRTargetGraphics.pl -in out/input_array_report.tab.txt
-        -html out/input_array_report.html -include_url -include_pvalue
+        -html out/input_array_report.html -include_url -include_pvalue &&
+#end if
+    true
 #else
     ## CRISPRTarget.pl runs all steps of the analysis
     CRISPRTarget.pl -gff spacers.gff
@@ -105,8 +111,15 @@
         -min_score $scoring.min_score
         $pam_option
         -out out &&
-    ## CRISPRTarget.pl reports errors without setting a non-zero exit code
-    test -e out/input_array_report.html
+    ## CRISPRTarget.pl reports errors without setting a non-zero exit code, hence the
+    ## existence of the requested reports is checked explicitly
+#if $reports.text_report
+    test -e out/input_array_report.txt &&
+#end if
+#if $reports.html_report
+    test -e out/input_array_report.html &&
+#end if
+    true
 #end if
     ]]></command>
     <inputs>
@@ -148,6 +161,10 @@
                 <option value="exact">Search PAMs of the exact CRISPR type</option>
             </param>
         </section>
+        <section name="reports" title="Reports" expanded="true">
+            <param name="text_report" type="boolean" checked="true" label="Text report" help="Report with the spacer/target alignments in plain text."/>
+            <param name="html_report" type="boolean" checked="false" label="Graphical report (HTML)" help="The same content as the text report as HTML page. Rendering the HTML report takes some time for large result sets."/>
+        </section>
         <section name="blast" title="BLASTN parameters" expanded="false">
             <param argument="-evalue" type="float" value="1" min="1e-10" max="10" label="E-value cutoff"/>
             <param argument="-word_size" type="integer" value="7" min="7" max="15" label="Word size" help="7 is the word size for short queries that CRISPRTarget uses"/>
@@ -159,8 +176,12 @@
     </inputs>
     <outputs>
         <data name="tabular_out" format="tabular" from_work_dir="out/input_array_report.tab.txt" label="${tool.name} on ${on_string}: target predictions"/>
-        <data name="text_out" format="txt" from_work_dir="out/input_array_report.txt" label="${tool.name} on ${on_string}: text report"/>
-        <data name="html_out" format="html" from_work_dir="out/input_array_report.html" label="${tool.name} on ${on_string}: graphical report"/>
+        <data name="text_out" format="txt" from_work_dir="out/input_array_report.txt" label="${tool.name} on ${on_string}: text report">
+            <filter>reports['text_report']</filter>
+        </data>
+        <data name="html_out" format="html" from_work_dir="out/input_array_report.html" label="${tool.name} on ${on_string}: graphical report">
+            <filter>reports['html_report']</filter>
+        </data>
     </outputs>
     <tests>
         <test expect_num_outputs="3">
@@ -188,6 +209,9 @@
                     <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
         </test>
         <test expect_num_outputs="3">
             <conditional name="spacer_input">
@@ -219,6 +243,9 @@
                     <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
         </test>
         <test expect_num_outputs="3">
             <conditional name="spacer_input">
@@ -250,8 +277,11 @@
                     <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
         </test>
-        <test expect_num_outputs="3">
+        <test expect_num_outputs="2">
             <conditional name="spacer_input">
                 <param name="input_type" value="gff"/>
                 <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
@@ -260,7 +290,8 @@
                 <param name="db_source" value="history"/>
                 <param name="genome_fasta" value="tiny_targets.fna" ftype="fasta"/>
                 <!-- the effective database size is derived from the FASTA file because the
-                     field is left empty -->
+                     field is left empty, and only the text report is created because the
+                     html report is not requested -->
             </conditional>
             <section name="scoring">
                 <param name="min_score" value="20"/>
@@ -277,13 +308,9 @@
                     <has_text text="MK448957.1"/>
                 </assert_contents>
             </output>
-            <output name="html_out">
-                <assert_contents>
-                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
-                </assert_contents>
-            </output>
         </test>
-        <test expect_num_outputs="3">
+        <!-- the html report is not requested, i.e. only two outputs are created -->
+        <test expect_num_outputs="2">
             <conditional name="spacer_input">
                 <param name="input_type" value="fasta"/>
                 <param name="spacers" value="NC_002737.spacers.fna.gz" ftype="fasta.gz"/>
@@ -305,11 +332,6 @@
             <output name="text_out">
                 <assert_contents>
                     <has_text text="MK448957.1"/>
-                </assert_contents>
-            </output>
-            <output name="html_out">
-                <assert_contents>
-                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
         </test>
@@ -338,6 +360,9 @@
                     <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
         </test>
         <test expect_num_outputs="3">
             <conditional name="spacer_input">
@@ -368,6 +393,9 @@
                     <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
                 </assert_contents>
             </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
         </test>
     </tests>
     <help format="markdown"><![CDATA[
@@ -381,9 +409,13 @@ shuffled version of the database to compute a p-value.
 
 The tool reports the predicted targets in three formats:
 
-- a **tabular** file with one line per predicted target,
+- a **tabular** file with one line per predicted target (this output is always created),
 - a **text** report with the spacer/target alignments, and
 - an **html** report with the same content as the text report.
+
+The text report is selected by default, the html report can be requested in the *Reports*
+section of the tool form. Requesting the reports is optional, e.g. if only the tabular output is
+needed for further processing.
 
 Spacers can be given as CRISPR array annotation in CRISPRDetect GFF format or as FASTA file of
 spacer sequences. In the former case the repeat sequences and, if available, the CRISPR types are
