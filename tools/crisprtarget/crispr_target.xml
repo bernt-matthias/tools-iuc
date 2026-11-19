@@ -26,7 +26,6 @@
 #if str($target_db.db_source) == 'cached'
     #set $db_path = $target_db.db.fields.db_path
     #set $ctrl_db_path = $target_db.db.fields.ctrl_db
-    #set $dbsize = $target_db.db.fields.dbsize
 #else
     #if $target_db.genome_fasta.is_of_type('fasta.gz')
         gunzip -c '$target_db.genome_fasta' > genome.fna &&
@@ -37,7 +36,16 @@
     MakeUserShuffledDB.sh genome.fna USER_SHUFFLED_DB > /dev/null &&
     #set $db_path = 'USER_DB/genome.fna'
     #set $ctrl_db_path = 'USER_SHUFFLED_DB/genome.fna'
-    #set $dbsize = $target_db.dbsize
+#end if
+
+## the effective database size used for the BLAST statistics and the p-values: taken from the
+## data table, from the user, or, if no size is given, the number of bases of the database
+#if str($target_db.db_source) == 'cached'
+    DBSIZE=$target_db.db.fields.dbsize &&
+#elif str($target_db.dbsize) != 'None'
+    DBSIZE=$target_db.dbsize &&
+#else
+    DBSIZE=\$(awk '!/^>/ {n += length($0)} END {print n}' genome.fna) &&
 #end if
 
 #set $pam_option = '-pam_search_' + str($scoring.pam_search)
@@ -49,7 +57,7 @@
     mkdir -p out &&
     CRISPRTarget_cmd.pl -fasta spacers.fna
         -db '$db_path' -bed_indexed_fna '$db_path'
-        -dbsize $dbsize
+        -dbsize "\${DBSIZE}"
         -evalue $blast.evalue
         -gapopen $blast.gapopen
         -gapextend $blast.gapextend
@@ -61,7 +69,7 @@
         -out out/main &&
     CRISPRTarget_cmd.pl -fasta spacers.fna
         -db '$ctrl_db_path' -bed_indexed_fna '$ctrl_db_path'
-        -dbsize $dbsize
+        -dbsize "\${DBSIZE}"
         -evalue $blast.evalue
         -gapopen $blast.gapopen
         -gapextend $blast.gapextend
@@ -86,7 +94,7 @@
     CRISPRTarget.pl -gff spacers.gff
         -db '$db_path'
         -ctrl_db '$ctrl_db_path'
-        -dbsize $dbsize
+        -dbsize "\${DBSIZE}"
         -evalue $blast.evalue
         -gapopen $blast.gapopen
         -gapextend $blast.gapextend
@@ -129,7 +137,7 @@
             </when>
             <when value="history">
                 <param name="genome_fasta" type="data" format="fasta,fasta.gz" label="Target sequences (e.g. phage or plasmid genomes)"/>
-                <param name="dbsize" type="integer" value="1000000000" min="1000" label="Effective database size" help="Used for the BLAST statistics and for the p-values. Choose the same value for databases of different sizes if you want to compare their p-values. Note that the database is rebuilt for every run, use the CRISPRTarget make database tool if you need the database repeatedly."/>
+                <param name="dbsize" type="integer" min="1000" optional="true" label="Effective database size" help="Used for the BLAST statistics and for the p-values. If left empty, the actual size of the database (the total number of bases in the FASTA file) is used. Give a fixed value, e.g. the 1000000000 suggested by CRISPRTarget, to obtain p-values that can be compared between databases of different sizes. Note that the database is rebuilt for every run, use the CRISPRTarget make database tool if you need the database repeatedly."/>
             </when>
         </conditional>
         <section name="scoring" title="Scoring and PAM search" expanded="true">
@@ -220,6 +228,39 @@
             <conditional name="target_db">
                 <param name="db_source" value="history"/>
                 <param name="genome_fasta" value="tiny_targets.fna" ftype="fasta"/>
+                <param name="dbsize" value="1000000000"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="20"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="1"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="history"/>
+                <param name="genome_fasta" value="tiny_targets.fna" ftype="fasta"/>
+                <!-- the effective database size is derived from the FASTA file because the
+                     field is left empty -->
             </conditional>
             <section name="scoring">
                 <param name="min_score" value="20"/>
