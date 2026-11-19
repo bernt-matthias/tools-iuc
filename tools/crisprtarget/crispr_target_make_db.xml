@@ -28,6 +28,16 @@ rm -rf target_db control_db
         <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Target sequences (e.g. phage or plasmid genomes)"/>
     </inputs>
     <outputs>
+        <!--
+        The outputs are zip archives of the database directories and not of the blastdbn datatype:
+        a blastdbn dataset is a composite of the files blastdb.nhr, blastdb.nin, blastdb.nsq, ...
+        (fixed names, see lib/galaxy/datatypes/blast.py), i.e. it contains the BLAST database only.
+        CRISPRTarget additionally needs the FASTA file of the database and its samtools index
+        (TargetPredict.pl only extracts the flanks of a match if <fasta> and <fasta>.fai exist) and
+        it is configured via the crispr_target_databases data table, which stores the paths of the
+        FASTA files. A blastdbn dataset cannot carry the FASTA file and the .fai index, and its
+        fixed file names would have to be renamed to match the FASTA file of the database.
+        -->
         <data name="target_db" format="zip" label="${tool.name} on ${on_string}: target database"/>
         <data name="control_db" format="zip" label="${tool.name} on ${on_string}: shuffled control database"/>
     </outputs>
@@ -58,7 +68,12 @@ This tool turns a FASTA file into a CRISPRTarget database, i.e. into
   CRISPRTarget uses to estimate the p-values of the matches.
 
 Both databases are returned as zip archives of the directory that contains the FASTA file, the
-BLAST database files and the ``.fai`` index.
+BLAST database files and the ``.fai`` index. A zip archive is used and not the ``blastdbn``
+datatype (the Galaxy datatype for nucleotide BLAST databases) because that datatype holds the
+BLAST database files only (with the fixed names ``blastdb.nhr``, ``blastdb.nin``, ``blastdb.nsq``,
+...), while CRISPRTarget needs the FASTA file of the database and its samtools index next to the
+BLAST database, and because the databases are handed over as files of the administrator's data
+table rather than as history datasets.
 
 -----
 
