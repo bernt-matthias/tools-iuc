@@ -1,0 +1,18 @@
+categories:
+- Data Managers
+- Sequence Analysis
+description: Contains a data manager that defines and populates the crispr_target_databases
+  tool data table.
+homepage_url: https://github.com/davidchyou/CRISPRTarget
+long_description: |
+  CRISPRTarget predicts the targets of CRISPR array spacers in viral, plasmid and
+  other sequences. Its p-values depend on the size of the database that is searched
+  and on a shuffled copy of the same sequences that serves as the background.
+  This data manager builds such database pairs from the public reference databases
+  that the CRISPRTarget authors distribute on Zenodo (viral and other sequences,
+  phage and plasmid), from a URL or from a FASTA file in the history and adds them
+  to the crispr_target_databases tool data table.
+name: data_manager_crisprtarget_builder
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/data_managers/data_manager_crisprtarget_builder
+type: unrestricted
