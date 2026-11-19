@@ -1,0 +1,2 @@
+#value	name	db_path	ctrl_db	dbsize
+tiny	Test database (T4 and Javan484 regions)	${__HERE__}/db/tiny_targets.fna	${__HERE__}/db_shuffled/tiny_targets.fna	5000

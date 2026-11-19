@@ -1,0 +1,44 @@
+<macros>
+    <token name="@TOOL_VERSION@">1.0</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">25.1</token>
+
+    <token name="@DATABASE_HELP@"><![CDATA[
+A CRISPRTarget database consists of two nucleotide BLAST databases that both need to come with a
+samtools index (i.e. `makeblastdb ... -parse_seqids` and a `.fai` file next to the FASTA file):
+
+- a **target database** with the sequences that are searched for matches to the spacers
+  (e.g. phage or plasmid genomes), and
+- a **shuffled control database** with sequences of the same composition but shuffled, which is
+  only used to estimate the p-value of a match. It should be as large and as diverse as the target
+  database, it does not need to be derived from it.
+
+The **CRISPRTarget make database** tool creates both databases from a FASTA file and returns them
+as zip archives, which can be handed to the Galaxy administrator to be deposited in the
+`crispr_target_databases` data table (or archived for later use). Administrators add one line per
+database pair to the data table:
+
+```
+<id>  <name shown in Galaxy>  /path/to/target/db.fa  /path/to/shuffled/db.fa  <effective database size>
+```
+
+See the `crispr_target_databases.loc.sample` file shipped with this tool for details and for the
+URLs of pre-built phage, plasmid and MetaVR databases.
+    ]]></token>
+
+    <xml name="requirements">
+        <requirement type="package" version="@TOOL_VERSION@">crisprtarget</requirement>
+        <!-- decompression of gzipped inputs -->
+        <requirement type="package" version="1.14">gzip</requirement>
+    </xml>
+
+    <xml name="require_zip">
+        <requirement type="package" version="3.0">zip</requirement>
+    </xml>
+
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.4161/rna.24046</citation>
+        </citations>
+    </xml>
+</macros>

@@ -1,0 +1,26 @@
+name: crisprtarget
+owner: iuc
+description: "CRISPRTarget: prediction and analysis of the targets of CRISPR spacers"
+homepage_url: https://github.com/davidchyou/CRISPRTarget
+long_description: |
+    CRISPRTarget predicts the targets of CRISPR spacers in sequence databases such as phage,
+    plasmid or viral metagenome databases. Spacers are matched with BLASTN and the matches are
+    scored with a model that takes the number and distribution of mismatches, the PAM and the
+    flanks of the match into account. P-values are estimated from a shuffled version of the
+    database. The results are reported as tabular file, as text and as graphical html report.
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/crisprtarget
+type: unrestricted
+categories:
+- Sequence Analysis
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for the CRISPRTarget tool suite: {{ tool_name }}"
+suite:
+  name: "suite_crisprtarget"
+  description: "CRISPRTarget: prediction and analysis of the targets of CRISPR spacers"
+  long_description: |
+    CRISPRTarget predicts the targets of CRISPR spacers in sequence databases such as phage,
+    plasmid or viral metagenome databases. Spacers are matched with BLASTN and the matches are
+    scored with a model that takes the number and distribution of mismatches, the PAM and the
+    flanks of the match into account. P-values are estimated from a shuffled version of the
+    database. The results are reported as tabular file, as text and as graphical html report.

@@ -1,0 +1,84 @@
+<tool id="crispr_target_viz" name="CRISPRTarget visualize" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>render the text and graphical reports of CRISPRTarget target predictions</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <requirements>
+        <expand macro="requirements"/>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+ln -s '$tabular_input' input.tab &&
+CRISPRTargetGraphics.pl -in input.tab
+    -txt '$txt_out' $include_url $include_pvalue &&
+CRISPRTargetGraphics.pl -in input.tab
+    -html '$html_out' $include_url $include_pvalue
+    ]]></command>
+    <inputs>
+        <param name="tabular_input" type="data" format="tabular" label="CRISPRTarget target predictions in tabular format" help="This is the tabular output of the CRISPRTarget tool (one line per target, 34 columns), possibly filtered or modified."/>
+        <param name="include_url" type="boolean" truevalue="-include_url" falsevalue="" checked="true" label="Include links to the NCBI sequence viewer" help="Adds link texts to the graphical report. The links are only rendered if the URL_Link column is filled."/>
+        <param name="include_pvalue" type="boolean" truevalue="-include_pvalue" falsevalue="" checked="true" label="Include the p-values in the reports" help="The p-values are only rendered if the P_value column is filled."/>
+    </inputs>
+    <outputs>
+        <data name="txt_out" format="txt" label="${tool.name} on ${on_string}: text report"/>
+        <data name="html_out" format="html" label="${tool.name} on ${on_string}: graphical report"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="tabular_input" value="NC_002737.targets.tabular" ftype="tabular"/>
+            <param name="include_url" value="true"/>
+            <param name="include_pvalue" value="true"/>
+            <output name="txt_out">
+                <assert_contents>
+                    <has_text text="Match to:  MK448957.1 Streptococcus phage Javan484"/>
+                    <has_text text="Score: 30"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="tabular_input" value="NC_002737.targets.tabular" ftype="tabular"/>
+            <param name="include_url" value="false"/>
+            <param name="include_pvalue" value="false"/>
+            <output name="txt_out">
+                <assert_contents>
+                    <has_text text="Match to:  MK448957.1 Streptococcus phage Javan484"/>
+                    <not_has_text text="P-value"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                    <not_has_text text="P-value"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+This tool renders the text and the html report of CRISPRTarget from a tabular file of target
+predictions, i.e. from the tabular output of the CRISPRTarget tool. This is useful if the
+predictions were filtered or modified in the history, e.g. to keep only the high scoring matches
+or the matches to a certain set of phages, and the alignments of the remaining matches should be
+inspected.
+
+The input file is expected to be the tabular output of CRISPRTarget without a header line (34
+columns, see the help of the CRISPRTarget tool for the column description). Lines of the file in
+which a column is missing or in the wrong order cannot be rendered.
+
+-----
+
+**Options**
+
+- **Include links to the NCBI sequence viewer** - add the links to the NCBI sequence viewer of the
+  matched database sequences (the ``URL_Link`` column).
+- **Include the p-values in the reports** - add the p-values of the matches (the ``P_value``
+  column).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

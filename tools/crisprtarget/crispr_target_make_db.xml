@@ -1,0 +1,84 @@
+<tool id="crispr_target_make_db" name="CRISPRTarget make database" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>build a target database and its shuffled control database</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <requirements>
+        <expand macro="requirements"/>
+        <expand macro="require_zip"/>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#if $input_fasta.is_of_type('fasta.gz')
+    gunzip -c '$input_fasta' > input.fna &&
+#else
+    ln -s '$input_fasta' input.fna &&
+#end if
+## builds the BLAST database (with a samtools index) and the shuffled control database
+MakeUserDB.sh input.fna target_db &&
+MakeUserShuffledDB.sh input.fna control_db &&
+## the databases are archived and the unpacked files are removed from the job directory
+## (zip cannot write to the empty file that Galaxy creates for the output)
+zip -r -q target_database.zip target_db &&
+mv target_database.zip '$target_db' &&
+zip -r -q control_database.zip control_db &&
+mv control_database.zip '$control_db' &&
+rm -rf target_db control_db
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Target sequences (e.g. phage or plasmid genomes)"/>
+    </inputs>
+    <outputs>
+        <data name="target_db" format="zip" label="${tool.name} on ${on_string}: target database"/>
+        <data name="control_db" format="zip" label="${tool.name} on ${on_string}: shuffled control database"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="input_fasta" value="tiny_targets.fna" ftype="fasta"/>
+            <output name="target_db">
+                <assert_contents>
+                    <has_size min="1000"/>
+                </assert_contents>
+            </output>
+            <output name="control_db">
+                <assert_contents>
+                    <has_size min="1000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+This tool turns a FASTA file into a CRISPRTarget database, i.e. into
+
+- a **target database**: a nucleotide BLAST database of the input sequences
+  (created with ``makeblastdb -parse_seqids -blastdb_version 4``) together with a samtools
+  index of the FASTA file, and
+- a **shuffled control database**: the same sequences shuffled with ``esl-shuffle``, which
+  CRISPRTarget uses to estimate the p-values of the matches.
+
+Both databases are returned as zip archives of the directory that contains the FASTA file, the
+BLAST database files and the ``.fai`` index.
+
+-----
+
+**Where to use the outputs**
+
+The zip archives are the artifact that the CRISPRTarget tool needs. Hand them (or the unpacked
+directories) to the Galaxy administrator, who adds one line per database pair to the
+``crispr_target_databases`` data table, so that the databases can be selected in the CRISPRTarget
+tool. See the help of the CRISPRTarget tool for details.
+
+If you only want to run a single search, the CRISPRTarget tool can also build the databases from a
+FASTA file of your history on the fly, in which case this tool is not needed.
+
+-----
+
+**Note**
+
+The shuffled control database is generated with a random seed, hence two runs of this tool on the
+same input result in different control databases. Both are equally valid, but the p-values of
+identical searches may differ slightly.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
