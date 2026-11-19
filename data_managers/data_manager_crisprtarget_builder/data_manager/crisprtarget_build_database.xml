@@ -1,0 +1,145 @@
+<tool id="crisprtarget_build_database" name="CRISPRTarget" tool_type="manage_data" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>database builder</description>
+    <macros>
+        <token name="@TOOL_VERSION@">1.0</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+        <token name="@PROFILE@">25.1</token>
+    </macros>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">crisprtarget</requirement>
+        <requirement type="package" version="3.12">python</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+python '$__tool_directory__/crisprtarget_build_database.py'
+    --out-json '$out_file'
+    --out-dir '$out_file.extra_files_path'
+    --db-id '$db_id'
+    --name '$db_name'
+#if $db_source.source in ('vhdb', 'phage', 'plasmid')
+    --public-database '$db_source.source'
+#elif $db_source.source == 'url'
+    --url '$db_source.url'
+#else
+    --fasta '$db_source.fasta'
+#end if
+#if $dbsize
+    --dbsize $dbsize
+#end if
+    ]]></command>
+    <inputs>
+        <conditional name="db_source">
+            <param name="source" type="select" label="Fetch the sequences of the database from" help="CRISPRTarget searches the targets of the CRISPR spacers in viral, plasmid and other sequences. The public databases are distributed by the CRISPRTarget authors on Zenodo (CC-BY-4.0).">
+                <option value="vhdb" selected="true">Zenodo: viral and other sequences (vhdb, ~49 MB download)</option>
+                <option value="phage">Zenodo: phage genomes (~660 MB download)</option>
+                <option value="plasmid">Zenodo: plasmid sequences (~3.4 GB download)</option>
+                <option value="url">A URL</option>
+                <option value="history">A file from the history</option>
+            </param>
+            <when value="vhdb"/>
+            <when value="phage"/>
+            <when value="plasmid"/>
+            <when value="url">
+                <param name="url" type="text" label="URL of a FASTA file" help="The file may be compressed with gzip or zip.">
+                    <validator type="regex" message="Please enter a valid HTTP or HTTPS URL">^https?://\S+$</validator>
+                </param>
+            </when>
+            <when value="history">
+                <param name="fasta" type="data" format="fasta,fasta.gz" label="FASTA file with the target sequences"/>
+            </when>
+        </conditional>
+        <param name="db_id" type="text" label="Database identifier" help="A short unique identifier without whitespace, e.g. phage_2026_08. It is used as the value of the data table entry.">
+            <validator type="regex" message="The identifier must not be empty and may only contain the characters A-Z, a-z, 0-9, _, ., + and -">^[A-Za-z0-9_.+-]+$</validator>
+        </param>
+        <param name="db_name" type="text" label="Database name" help="The name that is shown in the CRISPRTarget tool form, e.g. Phage (Zenodo 2026-08).">
+            <validator type="empty_field"/>
+        </param>
+        <param name="dbsize" type="integer" min="1000" optional="true" label="Effective database size" help="Used for the BLAST statistics and for the p-values. If left empty the actual number of bases of the database is used. Give a fixed value, e.g. the 1000000000 suggested by CRISPRTarget, to obtain p-values that can be compared between databases of different sizes."/>
+    </inputs>
+    <outputs>
+        <data name="out_file" format="data_manager_json"/>
+    </outputs>
+    <tests>
+        <!-- A database from the history: small enough to build both databases within seconds -->
+        <test expect_num_outputs="1">
+            <conditional name="db_source">
+                <param name="source" value="history"/>
+                <param name="fasta" value="tiny_targets.fna" ftype="fasta"/>
+            </conditional>
+            <param name="db_id" value="tiny_test"/>
+            <param name="db_name" value="Tiny test database"/>
+            <output name="out_file">
+                <assert_contents>
+                    <has_text text="crispr_target_databases"/>
+                    <has_text text="&quot;value&quot;: &quot;tiny_test&quot;"/>
+                    <has_text text="Tiny test database"/>
+                    <has_text text="&quot;db_path&quot;: &quot;tiny_test&quot;"/>
+                    <has_text text="&quot;ctrl_db&quot;: &quot;tiny_test_shuffled&quot;"/>
+                    <has_text text="&quot;dbsize&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- A gzipped FASTA and an explicitly given database size -->
+        <test expect_num_outputs="1">
+            <conditional name="db_source">
+                <param name="source" value="history"/>
+                <param name="fasta" value="tiny_targets.fna.gz" ftype="fasta.gz"/>
+            </conditional>
+            <param name="db_id" value="tiny_gz_test"/>
+            <param name="db_name" value="Tiny test database from a gzipped file"/>
+            <param name="dbsize" value="1000000000"/>
+            <output name="out_file">
+                <assert_contents>
+                    <has_text text="&quot;value&quot;: &quot;tiny_gz_test&quot;"/>
+                    <has_text text="&quot;dbsize&quot;: &quot;1000000000&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+Builds a CRISPRTarget database from a FASTA file and adds it to the *CRISPRTarget databases*
+data table, so that it can be selected in the CRISPRTarget tool form.
+
+A CRISPRTarget database consists of two parts: the *target database* with the sequences that
+are searched, and a *shuffled control database* with the same sequences in shuffled order.
+Each part is a directory with a FASTA file named after the database identifier and the
+corresponding BLAST database and samtools index.
+The latter serves as the background for the p-value calculation of the predicted targets.
+
+The sequences can be taken from
+
+- one of the public reference databases that are distributed by the CRISPRTarget authors on
+  Zenodo (`viral and other sequences`_, `phage`_, `plasmid`_; CC-BY-4.0, concept DOI
+  `10.5281/zenodo.14839268`_),
+- an arbitrary URL, or
+- a FASTA file from the history.
+
+The database is created with *MakeUserDB.sh* and *MakeUserShuffledDB.sh* from the CRISPRTarget
+package, i.e. the sequence identifiers are replaced by ``SEQ_<number>|<identifier>.fa`` (the
+original description, which contains the accession, is kept) and a nucleotide BLAST database (``makeblastdb -parse_seqids
+-blastdb_version 4``) and a samtools index are created. The two directories are installed
+in the Galaxy data manager directory.
+
+.. _viral and other sequences: https://zenodo.org/records/21869551/files/all_vhdb_full.fna.zip
+.. _phage: https://zenodo.org/records/21869551/files/phage.fa.zip
+.. _plasmid: https://zenodo.org/records/21869551/files/plasmid.fa.zip
+.. _10.5281/zenodo.14839268: https://doi.org/10.5281/zenodo.14839268
+
+**Effective database size**
+
+The p-values of CRISPRTarget depend on the size of the database: the same target gets a better
+p-value in a small database than in a large one. By default the actual number of bases of the
+database is used. Give a fixed value, e.g. the ``1000000000`` that CRISPRTarget suggests, if you
+want p-values that are comparable between databases of different sizes.
+
+**Runtime**
+
+Shuffling the sequences of a large database takes hours (``esl-shuffle``) and the database needs
+several times the size of the FASTA file on disk: the phage database needs about one hour and the
+plasmid database needs several hours to build.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.4161/rna.24046</citation>
+    </citations>
+</tool>

@@ -1,0 +1,7 @@
+<tables>
+    <!-- Locations of CRISPRTarget databases (target database and shuffled control database) -->
+    <table name="crispr_target_databases" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, db_path, ctrl_db, dbsize</columns>
+        <file path="${__HERE__}/test-data/crispr_target_databases.loc" />
+    </table>
+</tables>

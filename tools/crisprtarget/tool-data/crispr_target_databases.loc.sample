@@ -1,0 +1,29 @@
+# CRISPRTarget databases: a target database and the shuffled database that is used
+# as background for the p-value estimation.
+#
+# Tab separated fields where
+# value    is a unique key without whitespaces
+# name     is a descriptive name shown in Galaxy
+# db_path  is the path to the FASTA file of the target database
+# ctrl_db  is the path to the FASTA file of the shuffled control database
+# dbsize   is the effective database size used for the BLAST statistics and the p-values.
+#          Use the same value for databases of different sizes if you want to compare their
+#          p-values (CRISPRTarget suggests 1000000000).
+#
+# Both FASTA files must come with a nucleotide BLAST database that was created with
+# `makeblastdb -parse_seqids -blastdb_version 4` and with a samtools index (`samtools faidx`),
+# i.e. the file `<database>.fa` has to be accompanied by the BLAST database files
+# (`<database>.fa.n*`) and by `<database>.fa.fai`.
+#
+# Such database pairs can be created from a FASTA file with the CRISPRTarget make database
+# tool (which runs MakeUserDB.sh and MakeUserShuffledDB.sh from the CRISPRTarget package).
+#
+# FASTA files of pre-built databases:
+#   phage:   https://zenodo.org/records/24148305/files/phage.fa.zip
+#   plasmid: https://zenodo.org/records/24148305/files/plasmid.fa.zip
+#   vhdb (small test database): https://zenodo.org/records/21869551/files/all_vhdb_full.fna.zip
+#   MetaVR (~250 GB uncompressed): https://www.meta-virome.org/Downloads
+#
+#value	name	db_path	ctrl_db	dbsize
+#phage_2026_02	Phage (GenBank 2026-02)	/srv/galaxy/tool-data/crispr_target_databases/phage/phage.fa	/srv/galaxy/tool-data/crispr_target_databases/phage_shuffled/phage.fa	1000000000
+#plasmid_2026_02	Plasmid (RefSeq 2026-02)	/srv/galaxy/tool-data/crispr_target_databases/plasmid/plasmid.fa	/srv/galaxy/tool-data/crispr_target_databases/plasmid_shuffled/plasmid.fa	1000000000

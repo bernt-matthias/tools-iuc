@@ -1,0 +1,481 @@
+<tool id="crispr_target" name="CRISPRTarget" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>predict the targets of CRISPR spacers in phage, plasmid or other sequence databases</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <requirements>
+        <expand macro="requirements"/>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+## the spacer input, either a CRISPR array annotation or a set of spacer sequences
+#if str($spacer_input.input_type) == 'fasta'
+    #if $spacer_input.spacers.is_of_type('fasta.gz')
+        gunzip -c '$spacer_input.spacers' > spacers.fna &&
+    #else
+        ln -s '$spacer_input.spacers' spacers.fna &&
+    #end if
+#else
+    #if $spacer_input.crispr_gff.is_of_type('gff3.gz')
+        gunzip -c '$spacer_input.crispr_gff' > spacers.gff &&
+    #else
+        ln -s '$spacer_input.crispr_gff' spacers.gff &&
+    #end if
+#end if
+
+## the target database and the shuffled database used as background for the p-values
+#if str($target_db.db_source) == 'cached'
+    #set $db_path = $target_db.db.fields.db_path
+    #set $ctrl_db_path = $target_db.db.fields.ctrl_db
+#else
+    #if $target_db.genome_fasta.is_of_type('fasta.gz')
+        gunzip -c '$target_db.genome_fasta' > genome.fna &&
+    #else
+        ln -s '$target_db.genome_fasta' genome.fna &&
+    #end if
+    MakeUserDB.sh genome.fna USER_DB > /dev/null &&
+    MakeUserShuffledDB.sh genome.fna USER_SHUFFLED_DB > /dev/null &&
+    #set $db_path = 'USER_DB/genome.fna'
+    #set $ctrl_db_path = 'USER_SHUFFLED_DB/genome.fna'
+#end if
+
+## the effective database size used for the BLAST statistics and the p-values: taken from the
+## data table, from the user, or, if no size is given, the number of bases of the database
+#if str($target_db.db_source) == 'cached'
+    DBSIZE=$target_db.db.fields.dbsize &&
+#elif str($target_db.dbsize) != 'None'
+    DBSIZE=$target_db.dbsize &&
+#else
+    DBSIZE=\$(awk '!/^>/ {n += length($0)} END {print n}' genome.fna) &&
+#end if
+
+#set $pam_option = '-pam_search_' + str($scoring.pam_search)
+
+#if str($spacer_input.input_type) == 'fasta'
+    ## CRISPRTarget.pl only accepts array annotations, therefore the individual
+    ## steps it performs are run here: the search in the target and in the control
+    ## database, the scoring, and the rendering of the reports
+    mkdir -p out &&
+    CRISPRTarget_cmd.pl -fasta spacers.fna
+        -db '$db_path' -bed_indexed_fna '$db_path'
+        -dbsize "\${DBSIZE}"
+        -evalue $blast.evalue
+        -gapopen $blast.gapopen
+        -gapextend $blast.gapextend
+        -reward $blast.reward
+        -penalty $blast.penalty
+        -word_size $blast.word_size
+        -cpu "\${GALAXY_SLOTS:-1}"
+        -nr -no_acc_parsing -parse_acc_from_desc
+        -out out/main &&
+    CRISPRTarget_cmd.pl -fasta spacers.fna
+        -db '$ctrl_db_path' -bed_indexed_fna '$ctrl_db_path'
+        -dbsize "\${DBSIZE}"
+        -evalue $blast.evalue
+        -gapopen $blast.gapopen
+        -gapextend $blast.gapextend
+        -reward $blast.reward
+        -penalty $blast.penalty
+        -word_size $blast.word_size
+        -cpu "\${GALAXY_SLOTS:-1}"
+        -nr -no_acc_parsing
+        -out out/ctrl &&
+    PAMRescore.pl
+        -tab out/main/input_array_report.pam.txt
+        -tab_neg out/ctrl/input_array_report.pam.txt
+        -out out/input_array_report.tab.txt
+        -min_score $scoring.min_score
+        -compute_pval -guess_url $pam_option &&
+    ## only the requested reports are rendered
+#if $reports.text_report
+    CRISPRTargetGraphics.pl -in out/input_array_report.tab.txt
+        -txt out/input_array_report.txt -include_url -include_pvalue &&
+#end if
+#if $reports.html_report
+    CRISPRTargetGraphics.pl -in out/input_array_report.tab.txt
+        -html out/input_array_report.html -include_url -include_pvalue &&
+#end if
+    true
+#else
+    ## CRISPRTarget.pl runs all steps of the analysis
+    CRISPRTarget.pl -gff spacers.gff
+        -db '$db_path'
+        -ctrl_db '$ctrl_db_path'
+        -dbsize "\${DBSIZE}"
+        -evalue $blast.evalue
+        -gapopen $blast.gapopen
+        -gapextend $blast.gapextend
+        -reward $blast.reward
+        -penalty $blast.penalty
+        -word_size $blast.word_size
+        -cpu "\${GALAXY_SLOTS:-1}"
+        -min_score $scoring.min_score
+        $pam_option
+        -out out &&
+    ## CRISPRTarget.pl reports errors without setting a non-zero exit code, hence the
+    ## existence of the requested reports is checked explicitly
+#if $reports.text_report
+    test -e out/input_array_report.txt &&
+#end if
+#if $reports.html_report
+    test -e out/input_array_report.html &&
+#end if
+    true
+#end if
+    ]]></command>
+    <inputs>
+        <conditional name="spacer_input">
+            <param name="input_type" type="select" label="Spacer input" help="Spacers can be provided as CRISPR array annotation in CRISPRDetect GFF format (which also contains the repeat sequences and the array types) or as a plain FASTA file of spacer sequences.">
+                <option value="gff" selected="true">CRISPR array annotation (CRISPRDetect GFF)</option>
+                <option value="fasta">Spacer sequences (FASTA)</option>
+            </param>
+            <when value="gff">
+                <param name="crispr_gff" type="data" format="gff,gff3,gff3.gz" label="CRISPR array annotation in CRISPRDetect GFF format"/>
+            </when>
+            <when value="fasta">
+                <param name="spacers" type="data" format="fasta,fasta.gz" label="Spacer sequences in FASTA format"/>
+            </when>
+        </conditional>
+        <conditional name="target_db">
+            <param name="db_source" type="select" label="Target database" help="Databases configured by the Galaxy administrator are pre-indexed and come with a suitable shuffled database for the p-value estimation.">
+                <option value="cached" selected="true">Use a database configured by the administrator</option>
+                <option value="history">Build a database from a FASTA file in the history</option>
+            </param>
+            <when value="cached">
+                <param name="db" type="select" label="Target database with shuffled control database">
+                    <options from_data_table="crispr_target_databases">
+                        <filter type="sort_by" column="1"/>
+                        <validator type="no_options" message="No CRISPRTarget database is configured, contact the Galaxy administrator."/>
+                    </options>
+                </param>
+            </when>
+            <when value="history">
+                <param name="genome_fasta" type="data" format="fasta,fasta.gz" label="Target sequences (e.g. phage or plasmid genomes)"/>
+                <param name="dbsize" type="integer" min="1000" optional="true" label="Effective database size" help="Used for the BLAST statistics and for the p-values. If left empty, the actual size of the database (the total number of bases in the FASTA file) is used. Give a fixed value, e.g. the 1000000000 suggested by CRISPRTarget, to obtain p-values that can be compared between databases of different sizes. Note that the database is rebuilt for every run, use the CRISPRTarget make database tool if you need the database repeatedly."/>
+            </when>
+        </conditional>
+        <section name="scoring" title="Scoring and PAM search" expanded="true">
+            <param name="min_score" type="integer" value="20" min="0" max="1000" label="Minimum score of reported targets" help="The score is the sum of the weights of the matches, mismatches and PAMs of the spacer/target alignment (see Biswas et al. 2013 for details)."/>
+            <param name="pam_search" type="select" label="PAM search" help="Restricting the search to the PAMs of the CRISPR super-type or of the CRISPR type requires that the type of the array is known, i.e. that the annotation contains it. Searching all PAMs is the safe choice.">
+                <option value="all" selected="true">Search all PAMs</option>
+                <option value="super">Search PAMs of the same CRISPR super-type</option>
+                <option value="exact">Search PAMs of the exact CRISPR type</option>
+            </param>
+        </section>
+        <section name="reports" title="Reports" expanded="true">
+            <param name="text_report" type="boolean" checked="true" label="Text report" help="Report with the spacer/target alignments in plain text."/>
+            <param name="html_report" type="boolean" checked="false" label="Graphical report (HTML)" help="The same content as the text report as HTML page. Rendering the HTML report takes some time for large result sets."/>
+        </section>
+        <section name="blast" title="BLASTN parameters" expanded="false">
+            <param argument="-evalue" type="float" value="1" min="1e-10" max="10" label="E-value cutoff"/>
+            <param argument="-word_size" type="integer" value="7" min="7" max="15" label="Word size" help="7 is the word size for short queries that CRISPRTarget uses"/>
+            <param argument="-reward" type="integer" value="1" min="1" max="10" label="Match reward"/>
+            <param argument="-penalty" type="integer" value="-1" min="-10" max="-1" label="Mismatch penalty"/>
+            <param argument="-gapopen" type="integer" value="10" min="1" max="20" label="Gap opening penalty"/>
+            <param argument="-gapextend" type="integer" value="2" min="1" max="20" label="Gap extension penalty"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="tabular_out" format="tabular" from_work_dir="out/input_array_report.tab.txt" label="${tool.name} on ${on_string}: target predictions"/>
+        <data name="text_out" format="txt" from_work_dir="out/input_array_report.txt" label="${tool.name} on ${on_string}: text report">
+            <filter>reports['text_report']</filter>
+        </data>
+        <data name="html_out" format="html" from_work_dir="out/input_array_report.html" label="${tool.name} on ${on_string}: graphical report">
+            <filter>reports['html_report']</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="cached"/>
+                <param name="db" value="tiny"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="20"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="1"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out" file="expected_gff_report.txt"/>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
+        </test>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="fasta"/>
+                <param name="spacers" value="NC_002737.spacers.fna" ftype="fasta"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="cached"/>
+                <param name="db" value="tiny"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="10"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_text text="MK448957.1"/>
+                    <has_text text="NC_000866.4"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
+        </test>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="history"/>
+                <param name="genome_fasta" value="tiny_targets.fna" ftype="fasta"/>
+                <param name="dbsize" value="1000000000"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="20"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="1"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
+        </test>
+        <test expect_num_outputs="2">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="history"/>
+                <param name="genome_fasta" value="tiny_targets.fna" ftype="fasta"/>
+                <!-- the effective database size is derived from the FASTA file because the
+                     field is left empty, and only the text report is created because the
+                     html report is not requested -->
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="20"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="1"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- the html report is not requested, i.e. only two outputs are created -->
+        <test expect_num_outputs="2">
+            <conditional name="spacer_input">
+                <param name="input_type" value="fasta"/>
+                <param name="spacers" value="NC_002737.spacers.fna.gz" ftype="fasta.gz"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="cached"/>
+                <param name="db" value="tiny"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="10"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff3.gz" ftype="gff3.gz"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="cached"/>
+                <param name="db" value="tiny"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="20"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="1"/>
+                    <has_text text="MK448957.1"/>
+                </assert_contents>
+            </output>
+            <output name="text_out" file="expected_gff_report.txt"/>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
+        </test>
+        <test expect_num_outputs="3">
+            <conditional name="spacer_input">
+                <param name="input_type" value="gff"/>
+                <param name="crispr_gff" value="NC_002737.crispr.gff" ftype="gff"/>
+            </conditional>
+            <conditional name="target_db">
+                <param name="db_source" value="cached"/>
+                <param name="db" value="tiny"/>
+            </conditional>
+            <section name="scoring">
+                <param name="min_score" value="100"/>
+                <param name="pam_search" value="all"/>
+            </section>
+            <output name="tabular_out">
+                <assert_contents>
+                    <has_n_lines n="0"/>
+                </assert_contents>
+            </output>
+            <output name="text_out">
+                <assert_contents>
+                    <has_text text="# CRISPR target predictions in CRISPRTarget layout (text)"/>
+                    <not_has_text text="Match to:"/>
+                </assert_contents>
+            </output>
+            <output name="html_out">
+                <assert_contents>
+                    <has_text text="CRISPR target predictions in CRISPRTarget layout"/>
+                </assert_contents>
+            </output>
+            <section name="reports">
+                <param name="html_report" value="true"/>
+            </section>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+CRISPRTarget predicts the targets of CRISPR spacers in a sequence database. Spacers are matched
+to the database with BLASTN and the hits are scored with a model that takes the number and the
+distribution of mismatches, the PAM (protospacer adjacent motif) and the flanks of the match into
+account (see Biswas et al. 2013). The score of a match is compared to the scores obtained with a
+shuffled version of the database to compute a p-value.
+
+The tool reports the predicted targets in three formats:
+
+- a **tabular** file with one line per predicted target (this output is always created),
+- a **text** report with the spacer/target alignments, and
+- an **html** report with the same content as the text report.
+
+The text report is selected by default, the html report can be requested in the *Reports*
+section of the tool form. Requesting the reports is optional, e.g. if only the tabular output is
+needed for further processing.
+
+Spacers can be given as CRISPR array annotation in CRISPRDetect GFF format or as FASTA file of
+spacer sequences. In the former case the repeat sequences and, if available, the CRISPR types are
+taken from the annotation. For plain spacer sequences only the search over all known PAMs is
+meaningful.
+
+-----
+
+**Databases**
+
+@DATABASE_HELP@
+
+FASTA files of pre-built databases are available from Zenodo and can be turned into a database
+with the CRISPRTarget make database tool:
+
+- phage: https://zenodo.org/records/24148305/files/phage.fa.zip
+- plasmid: https://zenodo.org/records/24148305/files/plasmid.fa.zip
+- vhdb (small test database): https://zenodo.org/records/21869551/files/all_vhdb_full.fna.zip
+
+The much larger (~250 GB uncompressed, about 500 GB of disk space including the BLAST database)
+MetaVR database can be obtained from https://www.meta-virome.org/Downloads (see also the
+instructions in the README of the CRISPRTarget repository).
+
+-----
+
+**Output columns**
+
+The tabular output contains one line per spacer/target match with the following columns:
+
+- ``Spacer_accession`` - accession of the sequence the CRISPR array was found in
+- ``Spacer_ID`` - identifier of the spacer
+- ``Target_accession`` - accession of the database sequence the spacer matches
+- ``Target_start``, ``Target_end`` - start and end of the match in the target sequence
+- ``Target_flank_3p``, ``Target_flank_5p`` - flanks of the match in the target sequence
+- ``Target_score`` - score of the match
+- ``Target_strand`` - strand of the target sequence the spacer matches
+- ``PAM_3p_seq_plus_strand``, ``PAM_5p_seq_plus_strand``, ``PAM_3p_seq_minus_strand``,
+  ``PAM_5p_seq_minus_strand`` - PAM candidates found next to the match
+- ``Potential_self_match`` - the spacer matches a sequence flanking its own array
+- ``Spacer_seq``, ``Target_seq`` - spacer sequence (RNA alphabet) and the target sequence it matches
+- ``Spacer_description``, ``Target_description`` - descriptions of the spacer and the target sequence
+- ``URL_Link`` - link to the match in the NCBI sequence viewer
+- ``Spacer_flank_5p``, ``Spacer_flank_3p`` - flanks of the spacer in the CRISPR array
+- ``CRISPR_type`` - CRISPR type of the array (if known)
+- ``Repeat_seq`` - repeat sequence of the array
+- ``PAM_type_5p_plus_strand``, ``PAM_type_5p_minus_strand``, ``PAM_type_3p_plus_strand``,
+  ``PAM_type_3p_minus_strand`` - types of the PAMs found next to the match
+- ``P_value`` - p-value of the score, estimated from the shuffled control database
+- ``Source_spacer_flank_3p``, ``Source_spacer_flank_5p``, ``Source_target_flank_3p``,
+  ``Source_target_flank_5p`` - flanks of the spacer and of the target in the source sequences
+- ``Flank_match`` - the spacer and the target flanks are matching
+- ``Legacy_score`` - score of the web version of CRISPRTarget
+
+-----
+
+**Example**
+
+Searching the array annotation of *Streptococcus pyogenes* NC_002737 in a database of phage
+genomes reports e.g. the spacer ``NC_002737_2_2|860921_860951`` matching position 1101-1130 of
+*Streptococcus* phage Javan484 with a score of 30 and a 3' PAM (CTT) on the minus strand.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

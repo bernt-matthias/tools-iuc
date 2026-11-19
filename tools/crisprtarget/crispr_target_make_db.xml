@@ -1,0 +1,104 @@
+<tool id="crispr_target_make_db" name="CRISPRTarget make database" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>build a target database and its shuffled control database</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <requirements>
+        <expand macro="requirements"/>
+        <expand macro="require_zip"/>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+#if $input_fasta.is_of_type('fasta.gz')
+    gunzip -c '$input_fasta' > input.fna &&
+#else
+    ln -s '$input_fasta' input.fna &&
+#end if
+## builds the BLAST database (with a samtools index) and the shuffled control database
+MakeUserDB.sh input.fna target_db &&
+MakeUserShuffledDB.sh input.fna control_db &&
+## the databases are archived and the unpacked files are removed from the job directory
+## (zip cannot write to the empty file that Galaxy creates for the output)
+zip -r -q target_database.zip target_db &&
+mv target_database.zip '$target_db' &&
+zip -r -q control_database.zip control_db &&
+mv control_database.zip '$control_db' &&
+rm -rf target_db control_db
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Target sequences (e.g. phage or plasmid genomes)"/>
+    </inputs>
+    <outputs>
+        <!--
+        The outputs are zip archives of the database directories and not of the blastdbn datatype:
+        a blastdbn dataset is a composite of the files blastdb.nhr, blastdb.nin, blastdb.nsq, ...
+        (fixed names, see lib/galaxy/datatypes/blast.py), i.e. it contains the BLAST database only.
+        CRISPRTarget additionally needs the FASTA file of the database and its samtools index
+        (TargetPredict.pl only extracts the flanks of a match if <fasta> and <fasta>.fai exist) and
+        it is configured via the crispr_target_databases data table, which stores the paths of the
+        FASTA files. A blastdbn dataset cannot carry the FASTA file and the .fai index, and its
+        fixed file names would have to be renamed to match the FASTA file of the database.
+        -->
+        <data name="target_db" format="zip" label="${tool.name} on ${on_string}: target database"/>
+        <data name="control_db" format="zip" label="${tool.name} on ${on_string}: shuffled control database"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="input_fasta" value="tiny_targets.fna" ftype="fasta"/>
+            <output name="target_db">
+                <assert_contents>
+                    <has_size min="1000"/>
+                </assert_contents>
+            </output>
+            <output name="control_db">
+                <assert_contents>
+                    <has_size min="1000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+This tool turns a FASTA file into a CRISPRTarget database, i.e. into
+
+- a **target database**: a nucleotide BLAST database of the input sequences
+  (created with ``makeblastdb -parse_seqids -blastdb_version 4``) together with a samtools
+  index of the FASTA file, and
+- a **shuffled control database**: the same sequences shuffled with ``esl-shuffle``, which
+  CRISPRTarget uses to estimate the p-values of the matches.
+
+Both databases are returned as zip archives of the directory that contains the FASTA file, the
+BLAST database files and the ``.fai`` index. A zip archive is used and not the ``blastdbn``
+datatype (the Galaxy datatype for nucleotide BLAST databases) because that datatype holds the
+BLAST database files only (with the fixed names ``blastdb.nhr``, ``blastdb.nin``, ``blastdb.nsq``,
+...), while CRISPRTarget needs the FASTA file of the database and its samtools index next to the
+BLAST database, and because the databases are handed over as files of the administrator's data
+table rather than as history datasets.
+
+-----
+
+**Where to use the outputs**
+
+The zip archives are the artifact that the CRISPRTarget tool needs. Hand them (or the unpacked
+directories) to the Galaxy administrator, who adds one line per database pair to the
+``crispr_target_databases`` data table, so that the databases can be selected in the CRISPRTarget
+tool. See the help of the CRISPRTarget tool for details.
+
+Administrators can use the *CRISPRTarget database builder* data manager for this: it builds the
+database pair from a FASTA file of a history, from a URL or from the public reference databases
+(viral and other sequences, phage, plasmid) that the CRISPRTarget authors distribute on Zenodo,
+installs it in the Galaxy data manager directory and adds the entry to the data table.
+
+If you only want to run a single search, the CRISPRTarget tool can also build the databases from a
+FASTA file of your history on the fly, in which case this tool is not needed.
+
+-----
+
+**Note**
+
+The shuffled control database is generated with a random seed, hence two runs of this tool on the
+same input result in different control databases. Both are equally valid, but the p-values of
+identical searches may differ slightly.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
